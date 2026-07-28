@@ -1372,12 +1372,18 @@ function renderDownloads(){
      + '<div style="margin-top:9px"><button class="btn" id="encBtn" type="button">'
      + 'Encrypt and download the key</button> '
      + '<button class="btn" id="plainBtn" type="button">Download it unencrypted</button></div>'
-     + '<p class="mut" style="margin-top:8px">Encryption is AES-GCM 256 with the key derived from '
-     + 'your passphrase (PBKDF2-SHA256, 600,000 iterations). Send the passphrase by phone or text, '
-     + 'never in the same message as the file.</p><div id="encOut"></div>';
+     + '<p class="mut" style="margin-top:8px"><b>This is for storing the key, not for sending it.</b> '
+     + 'Encrypted, it can sit in your document system or on a laptop without being a liability. '
+     + 'AES-GCM 256, key derived from your passphrase by PBKDF2-SHA256 at 600,000 iterations, all '
+     + 'performed on this machine.</p>'
+     + '<p class="mut">The person receiving your scrubbed schedule never gets this file and has '
+     + 'nothing to decrypt. The only reason to pass it to anyone is a colleague on your own side '
+     + 'covering for you &mdash; and then the passphrase goes separately, by phone or in person, '
+     + 'never in the same message.</p><div id="encOut"></div>';
   } else {
     h+='<p class="mut">Encryption is unavailable in this browser context, so the key can only be '
-     + 'saved unencrypted. Store it somewhere safe.</p>'
+     + 'saved unencrypted. Store it somewhere safe. The person receiving your scrubbed schedule '
+     + 'never gets this file.</p>'
      + '<button class="btn" id="plainBtn" type="button">Download the key</button>';
   }
   h+='</div></div>';
@@ -2209,8 +2215,11 @@ function buildHelp(){
    + '<p>Scrubbing protects you from the recipient reading things they should not. Encryption '
    + 'protects you from somebody else reading it in transit. They are different risks and encryption '
    + 'does not substitute for scrubbing.</p>'
-   + '<h4>The key file</h4>'
-   + '<p>Holdpoint can encrypt the key file directly: AES-GCM with a 256-bit key derived from your '
+   + '<h4>The key file &mdash; encrypted for storage, not for sending</h4>'
+   + '<p>Worth being clear, because it is easy to assume otherwise: <b>the person receiving your '
+   + 'scrubbed schedule never gets the key and has nothing to decrypt.</b> The file you send them is '
+   + 'an ordinary XER. Encryption protects the key while it sits in your own records.</p>'
+   + '<p>Holdpoint can encrypt it directly: AES-GCM with a 256-bit key derived from your '
    + 'passphrase using PBKDF2-SHA256 at 600,000 iterations, all performed by your browser\u2019s own '
    + 'cryptography. The salt and initialisation vector are random per file and stored alongside the '
    + 'ciphertext.</p>'
