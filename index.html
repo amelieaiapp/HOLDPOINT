@@ -2669,7 +2669,21 @@ document.getElementById('help').addEventListener('keydown',function(e){
    no outbound request of its own — see sw.js. */
 if('serviceWorker' in navigator){
   window.addEventListener('load',function(){
-    navigator.serviceWorker.register('sw.js').catch(function(){});
+    navigator.serviceWorker.register('sw.js').then(function(reg){
+      /* If a newer worker is waiting, let it take over rather than leaving the old build in place. */
+      if(reg.waiting) reg.waiting.postMessage('skipWaiting');
+      reg.addEventListener('updatefound',function(){
+        var w=reg.installing;
+        if(!w) return;
+        w.addEventListener('statechange',function(){
+          if(w.state==='installed'&&navigator.serviceWorker.controller) w.postMessage('skipWaiting');
+        });
+      });
+    }).catch(function(){});
+    var reloaded=false;
+    navigator.serviceWorker.addEventListener('controllerchange',function(){
+      if(reloaded) return; reloaded=true; window.location.reload();
+    });
   });
 }
 refresh();
