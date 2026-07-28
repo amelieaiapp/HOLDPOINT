@@ -1,0 +1,2669 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>XER Holdpoint — release control for schedule files — Rev 3.2</title>
+<link rel="icon" id="favicon">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#16191d">
+<meta name="description" content="Make a share-safe copy of a Primavera P6 XER before you send it. Nothing leaves your device.">
+<link rel="apple-touch-icon" href="icons/icon_192x192.png">
+<style>
+:root{
+  --ink:#16191d; --paper:#eceae4; --sheet:#f8f7f4; --rule:#cdc9c0; --rule2:#e2dfd8;
+  --mut:#6a6a63; --text:#22252a;
+  --pass:#2d6a4f; --review:#a1622a; --block:#9b2226; --seal:#2f4858;
+  --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,"Liberation Mono",monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--paper);color:var(--text);font:15px/1.55 var(--sans)}
+.wrap{max-width:880px;margin:0 auto;padding:24px 18px 80px}
+
+/* ---- masthead: a document control header, not a hero ---- */
+.mast{border-top:3px solid var(--ink);border-bottom:1px solid var(--rule);padding:14px 0 12px;
+  display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap}
+.lockup{display:flex;align-items:center;gap:13px}
+.mast .mark{flex:0 0 auto;display:block}
+.mast h1{margin:0;font:300 29px/1 var(--sans);letter-spacing:.01em;text-transform:uppercase}
+.mast h1 b{font-weight:800;letter-spacing:-.015em}
+.mast h1 i{font-style:normal;font-weight:500;color:var(--mut);letter-spacing:.06em}
+.mast .tag{font:600 10.5px/1 var(--mono);letter-spacing:.17em;text-transform:uppercase;
+  color:var(--mut);margin-top:6px}
+.mast .meta{font:600 11px/1.5 var(--mono);text-transform:uppercase;letter-spacing:.09em;
+  color:var(--mut);text-align:right}
+.standfirst{margin:16px 0 4px;font-size:16.5px;max-width:62ch}
+.standfirst b{font-weight:700}
+
+/* ---- sheets ---- */
+.sheet{background:var(--sheet);border:1px solid var(--rule);margin:18px 0;padding:0}
+.sheet>.hd{display:flex;align-items:baseline;gap:12px;padding:11px 16px;border-bottom:1px solid var(--rule2);
+  background:#f2f1ed}
+.sheet>.hd .step{font:700 10.5px/1 var(--mono);letter-spacing:.12em;color:#fff;background:var(--ink);
+  padding:5px 7px;text-transform:uppercase}
+.sheet>.hd h2{margin:0;font:700 15px/1.3 var(--sans);letter-spacing:-.01em}
+.sheet>.bd{padding:16px}
+.mut{color:var(--mut);font-size:13.5px}
+.eyebrow{font:700 10.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:var(--mut);
+  display:block;margin:0 0 7px}
+
+/* ---- controls ---- */
+.drop{border:1.5px dashed var(--rule);background:#fff;padding:30px 18px;text-align:center;cursor:pointer}
+.drop.hot{border-color:var(--ink);background:#fffdf5}
+.drop b{display:block;font-size:16px;margin-bottom:4px}
+.btn{font:600 13.5px/1 var(--sans);padding:11px 16px;border:1px solid var(--ink);background:#fff;
+  color:var(--ink);cursor:pointer}
+.btn:hover{background:var(--ink);color:#fff}
+.btn.solid{background:var(--ink);color:#fff}
+.btn.solid:hover{background:#000}
+.btn.wide{display:block;width:100%;padding:15px;font-size:15.5px;font-weight:700;margin-top:6px}
+.btn:disabled{border-color:var(--rule);background:#e8e6e1;color:#9a978f;cursor:not-allowed}
+.btn:disabled:hover{background:#e8e6e1;color:#9a978f}
+ul.files{list-style:none;margin:12px 0 0;padding:0}
+ul.files li{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:8px 11px;
+  background:#fff;border:1px solid var(--rule2);margin-top:6px;font:13px/1.4 var(--mono)}
+ul.files li .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ul.files li .rt{flex:0 0 auto;white-space:nowrap}
+ul.files .x{color:var(--block);cursor:pointer;font-weight:700}
+label.lvl{display:block;border:1px solid var(--rule2);background:#fff;padding:12px 14px;margin:8px 0;cursor:pointer}
+label.lvl:hover{border-color:var(--ink)}
+label.lvl.on{border-color:var(--ink);border-left-width:4px;background:#fffdf5}
+label.lvl b{font-size:14.5px}
+label.lvl .d{color:var(--mut);font-size:13px;margin-top:3px}
+input[type=text]{width:100%;padding:10px;border:1px solid var(--rule);background:#fff;font:inherit}
+.sub{margin:9px 0 0 22px;padding-left:13px;border-left:2px solid var(--rule2)}
+.sub label{display:block;margin:5px 0;font-size:13.5px}
+
+/* ---- verdict ---- */
+.verdict{display:flex;align-items:center;gap:14px;padding:15px 17px;border:2px solid;
+  margin-bottom:14px;flex-wrap:wrap}
+.verdict .v{font:800 19px/1 var(--sans);letter-spacing:.02em;text-transform:uppercase;white-space:nowrap}
+.verdict .n{font-size:13.5px}
+.verdict.PASSED{border-color:var(--pass);background:#eef4f0}.verdict.PASSED .v{color:var(--pass)}
+.verdict.REVIEW{border-color:var(--review);background:#f9f2e9}.verdict.REVIEW .v{color:var(--review)}
+.verdict.BLOCKED{border-color:var(--block);background:#f8ecec}.verdict.BLOCKED .v{color:var(--block)}
+
+/* ---- the ledger: the signature element ---- */
+.ledger{font:12.5px/1.75 var(--mono);background:#fff;border:1px solid var(--rule2);max-height:340px;
+  overflow:auto;padding:10px 12px}
+.ledger table{border-collapse:collapse;width:100%}
+.ledger td{padding:2px 8px 2px 0;vertical-align:top}
+.ledger td.n{color:var(--mut);text-align:right;white-space:nowrap;width:1%}
+.ledger td.f{white-space:nowrap;width:1%}
+.bar{background:var(--ink);color:var(--ink);padding:0 5px;border-radius:1px;cursor:pointer;
+  user-select:none;display:inline-block;min-width:3.5em;font:inherit;border:0}
+.bar:focus-visible{outline:2px solid var(--review);outline-offset:2px}
+.btn:focus-visible,.reveal:focus-visible,.dl:focus-visible,.gate input:focus-visible,
+.lvl input:focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+.bar.show{background:#fff2c8;color:var(--ink);outline:1px solid var(--review)}
+.arrow{color:var(--mut);padding:0 6px}
+.code{color:var(--seal);font-weight:600}
+.reveal{float:right;font:600 11px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;
+  background:none;border:1px solid var(--rule);padding:6px 9px;cursor:pointer;color:var(--mut)}
+
+/* ---- gate ---- */
+.gate{border:2px solid var(--ink);background:#fffdf5;padding:16px;margin-top:16px}
+.gate.done{border-color:var(--pass);background:#eef4f0}
+.gate label{display:flex;gap:11px;align-items:flex-start;cursor:pointer;font-size:14.5px}
+.gate input{margin-top:3px;width:17px;height:17px;flex:0 0 auto}
+.pre{font:12px/1.5 var(--mono);background:var(--ink);color:#d9d6cd;padding:12px;max-height:320px;
+  overflow:auto;white-space:pre;margin-top:8px;max-width:100%}
+.ledger table{min-width:0}
+.ledger td{word-break:break-word}
+.verdict .n{min-width:0}
+table.sum{table-layout:fixed;word-break:break-word}
+.dl{display:inline-block;background:var(--ink);color:#fff;text-decoration:none;padding:11px 14px;
+  margin:6px 8px 0 0;font:600 13.5px/1 var(--sans)}
+.dl.alt{background:var(--seal)}
+.dl.key{background:var(--block)}
+.warn{border:1px solid var(--review);border-left:4px solid var(--review);background:#f9f2e9;
+  padding:12px 14px;margin-top:12px;font-size:13.5px}
+.note{border:1px solid var(--rule2);border-left:4px solid var(--seal);background:#fff;
+  padding:12px 14px;margin-top:12px;font-size:13.5px}
+table.sum{border-collapse:collapse;width:100%;font-size:13px;margin-top:8px}
+table.sum th,table.sum td{border:1px solid var(--rule2);padding:6px 9px;text-align:left}
+table.sum th{background:#f2f1ed;font-weight:700;width:34%}
+.pill{display:inline-block;background:#fff;border:1px solid var(--rule);padding:4px 10px;
+  font:12px/1 var(--mono);margin:4px 5px 0 0}
+.foot{margin-top:34px;border-top:1px solid var(--rule);padding-top:14px;font-size:11.5px;color:var(--mut)}
+
+
+/* ---- help ---- */
+.helpbtn{background:none;border:1px solid var(--rule);color:var(--mut);font:600 10.5px/1 var(--mono);
+  letter-spacing:.12em;text-transform:uppercase;padding:8px 12px;cursor:pointer}
+.helpbtn:hover{border-color:var(--ink);color:var(--ink)}
+.help{position:fixed;inset:0;background:var(--paper);z-index:98;display:none;overflow:hidden}
+.help.on{display:flex;flex-direction:column}
+.help .bar2{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:var(--ink);color:#fff;padding:12px 20px;flex:0 0 auto}
+.help .bar2 h2{margin:0;font:800 16px/1 var(--sans);letter-spacing:.02em;text-transform:uppercase}
+.help .bar2 h2 span{font-weight:300;color:#a5a29a}
+.help .body{flex:1 1 auto;display:flex;overflow:hidden}
+.help nav{flex:0 0 268px;overflow:auto;background:#e6e3dc;border-right:1px solid var(--rule);
+  padding:16px 0 40px}
+.help nav a{display:block;padding:5px 18px;color:var(--text);text-decoration:none;font-size:13.5px}
+.help nav a:hover{background:#dcd8cf}
+.help nav a.h{font:700 10.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;
+  color:var(--mut);margin-top:14px;padding-bottom:4px;pointer-events:none}
+.help nav a.sub{padding-left:32px;font-size:13px;color:var(--mut)}
+.help main{flex:1 1 auto;overflow:auto;padding:26px 34px 90px;scroll-behavior:smooth}
+.help main .inner{max-width:74ch}
+.help h3{font:800 20px/1.25 var(--sans);letter-spacing:-.01em;margin:34px 0 10px;
+  padding-top:12px;border-top:2px solid var(--ink)}
+.help h3:first-child{margin-top:0;border-top:0;padding-top:0}
+.help h4{font:700 15px/1.3 var(--sans);margin:20px 0 6px}
+.help p,.help li{font-size:14.5px;line-height:1.62}
+.help ul,.help ol{padding-left:20px}
+.help li{margin-bottom:5px}
+.help code{font:12.5px/1.4 var(--mono);background:#e6e3dc;padding:1px 5px;border-radius:2px}
+.help table{border-collapse:collapse;width:100%;font-size:13px;margin:10px 0 4px}
+.help th,.help td{border:1px solid var(--rule2);padding:6px 9px;text-align:left;vertical-align:top}
+.help th{background:#e6e3dc;font-weight:700}
+.help .ts{border:1px solid var(--rule);background:var(--sheet);padding:0;margin:12px 0}
+.help .ts>div{padding:12px 15px;border-bottom:1px solid var(--rule2)}
+.help .ts>div:last-child{border-bottom:0}
+.help .ts .sym{font-weight:700;font-size:14.5px}
+.help .ts .why{color:var(--mut);font-size:13.5px;margin-top:3px}
+.help .ts .fix{font-size:14px;margin-top:6px}
+.help .callout{border:1px solid var(--rule2);border-left:4px solid var(--seal);background:var(--sheet);
+  padding:12px 15px;margin:14px 0;font-size:14px}
+.help .callout.warn{border-left-color:var(--review);background:#f9f2e9}
+.help .callout.stop{border-left-color:var(--block);background:#f8ecec}
+.help .toc{columns:2;column-gap:26px;font-size:14px}
+.help .toc a{display:block;padding:3px 0;color:var(--text)}
+.help .filter{width:100%;max-width:320px;padding:9px 11px;border:1px solid var(--rule);margin:6px 0 12px}
+@media (max-width:820px){
+  .help nav{display:none}
+  .help main{padding:18px 16px 80px}
+  .help .toc{columns:1}
+}
+
+
+/* ---- printable certificate ---- */
+.printView{position:fixed;inset:0;background:#6b6b64;z-index:97;display:none;overflow:auto;padding:26px 16px 60px}
+.printView.on{display:block}
+.pbar{max-width:820px;margin:0 auto 14px;display:flex;justify-content:space-between;gap:12px;align-items:center}
+.pbar .t{color:#fff;font:600 12px/1 var(--mono);letter-spacing:.11em;text-transform:uppercase}
+.sheetdoc{max-width:820px;margin:0 auto;background:#fff;color:#1a1c22;padding:38px 44px 30px;
+  border:1px solid #4d4d47;font:13.5px/1.55 var(--sans)}
+.phead{display:flex;align-items:center;gap:14px;border-bottom:2.5px solid var(--ink);padding-bottom:14px;margin-bottom:18px}
+.phead svg{flex:0 0 auto}
+.pname{font:300 21px/1 var(--sans);text-transform:uppercase;letter-spacing:.01em;color:var(--ink)}
+.pname b{font-weight:800;letter-spacing:-.015em}
+.pname i{font-style:normal;font-weight:500;color:#6a6a63;letter-spacing:.06em}
+.psub{font:600 10.5px/1 var(--mono);letter-spacing:.15em;text-transform:uppercase;color:#6a6a63;margin-top:6px}
+.pref{margin-left:auto;text-align:right}
+.pref .l{font:600 9.5px/1 var(--mono);letter-spacing:.12em;text-transform:uppercase;color:#6a6a63}
+.pref .v{font:700 15px/1.2 var(--mono);margin-top:4px}
+.sheetdoc h4{font:700 13px/1.3 var(--sans);text-transform:uppercase;letter-spacing:.05em;
+  margin:22px 0 7px;padding-bottom:4px;border-bottom:1px solid #cdc9c0}
+table.pt{border-collapse:collapse;width:100%;font-size:12.5px}
+table.pt th,table.pt td{border:1px solid #ddd9d1;padding:5px 8px;text-align:left;vertical-align:top}
+table.pt thead th{background:#f0eee9}
+table.pt tbody th{background:#f6f5f2;font-weight:700;width:31%}
+table.pt td.n,table.pt th.n{text-align:right;width:9%}
+table.pt tr.tot td{background:#f6f5f2}
+.hash{font:10.5px/1.4 var(--mono);color:#6a6a63;word-break:break-all;margin-top:2px}
+.v-PASSED{color:var(--pass)}.v-REVIEW{color:var(--review)}.v-BLOCKED{color:var(--block)}
+.pm{color:#6a6a63;font-size:12px}
+ul.pl{margin:6px 0 0;padding-left:20px;font-size:12.5px}
+ul.pl li{margin-bottom:3px}
+.pfoot{margin-top:24px;border-top:1px solid #cdc9c0;padding-top:12px;font-size:11.5px;color:#3a3a35}
+@media print{
+  body>.wrap,body>.help,body>.overlay,.pbar{display:none!important}
+  .printView{position:static;display:block!important;background:#fff;padding:0;overflow:visible}
+  .sheetdoc{max-width:none;border:0;padding:0;font-size:11pt}
+  table.pt,ul.pl,.pfoot{page-break-inside:auto}
+  table.pt tr{page-break-inside:avoid}
+  .sheetdoc h4{page-break-after:avoid}
+  .phead{page-break-after:avoid}
+}
+
+
+/* ---- decode ---- */
+.decode{position:fixed;inset:0;background:var(--paper);z-index:96;display:none;overflow:auto}
+.decode.on{display:block}
+.decode .bar2{display:flex;align-items:center;justify-content:space-between;gap:14px;
+  background:var(--ink);color:#fff;padding:12px 20px;position:sticky;top:0}
+.decode .bar2 h2{margin:0;font:800 16px/1 var(--sans);letter-spacing:.02em;text-transform:uppercase}
+.decode .bar2 h2 span{font-weight:300;color:#a5a29a}
+.decode .inner{max-width:820px;margin:0 auto;padding:22px 18px 70px}
+.decode textarea{width:100%;min-height:130px;padding:11px;border:1px solid var(--rule);
+  font:13px/1.5 var(--mono);background:#fff;resize:vertical}
+
+/* ---- first-run agreement ---- */
+.overlay{position:fixed;inset:0;background:rgba(22,25,29,.93);display:flex;align-items:center;
+  justify-content:center;padding:20px;z-index:99}
+.overlay .box{background:var(--sheet);max-width:620px;max-height:88vh;overflow:auto;padding:26px;
+  border-top:4px solid var(--ink)}
+.overlay h2{margin:0 0 12px;font-size:19px}
+.overlay li{margin-bottom:7px;font-size:14px}
+@media (prefers-reduced-motion:no-preference){.sheet{transition:border-color .15s}}
+@media (max-width:620px){
+  .mast .meta{text-align:left}.wrap{padding:16px 12px 60px}
+  .mast{flex-direction:column;align-items:flex-start;gap:10px}
+  .sheet>.bd{padding:13px}
+  .dl,.btn{width:100%;text-align:center;margin:5px 0 0}
+  .reveal{float:none;display:block;width:100%;margin:8px 0}
+  table.sum th,table.sum td{display:block;width:auto}
+  table.sum th{border-bottom:0}
+}
+</style>
+</head>
+<body>
+
+<div class="overlay" id="eula"><div class="box">
+  <h2>Before you use this tool</h2>
+  <p class="mut" style="font-size:13.5px">Please read these five points. They are short because they matter.</p>
+  <ol>
+    <li><b>This tool removes what is on its list.</b> It keeps only the fields it recognises as
+      schedule structure and removes or empties everything else, including fields it has never seen.
+      That is a strong design, but it is not a guarantee about your particular file.</li>
+    <li><b>You must check the output yourself before you send it.</b> The tool will not release a
+      download until you have opened the review panel. This step is not a formality.</li>
+    <li><b>Removing names is not the same as making a file untraceable.</b> Real dates, durations,
+      working calendars and the shape of the network remain, because the schedule would be useless
+      without them. A distinctive project can sometimes be recognised from those alone.</li>
+    <li><b>Your original file is never modified.</b> It is read into memory and left alone. Work on a
+      copy anyway.</li>
+    <li><b>No warranty.</b> This software is provided as is, without warranty of any kind as to
+      completeness or fitness for purpose. You are responsible for verifying the output before
+      disclosure. Liability is limited to the amount you paid for the licence.</li>
+  </ol>
+  <button class="btn solid wide" id="eulaOk">I have read this and accept</button>
+</div></div>
+
+<div class="wrap">
+  <div class="mast">
+    <div class="lockup"><svg class="mark" width="46" height="46" viewBox="0 0 64 64" role="img" aria-label="Holdpoint"><defs><linearGradient id="hpSteel" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#7e8b96"/><stop offset=".18" stop-color="#dfe8ed"/><stop offset=".38" stop-color="#b3c1cb"/><stop offset=".62" stop-color="#8695a1"/><stop offset=".85" stop-color="#cfd9e0"/><stop offset="1" stop-color="#8d9aa5"/></linearGradient><clipPath id="hpArm"><rect x="8.2" y="27.2" width="47.6" height="10.1" rx="1.6"/></clipPath></defs><rect x=".5" y=".5" width="63" height="63" rx="13" fill="#d4e6f1" stroke="#a9c4d6"/><rect x="10" y="13" width="7" height="38" fill="url(#hpSteel)"/><rect x="47" y="13" width="7" height="38" fill="url(#hpSteel)"/><rect x="7.5" y="26.5" width="49" height="11.5" rx="2" fill="#fff" stroke="#2c3e4a" stroke-width="1.4"/><g clip-path="url(#hpArm)"><path d="M-14 27.2h11l-10.1 10.1h-11z" fill="#cf3027"/><path d="M8 27.2h11l-10.1 10.1h-11z" fill="#cf3027"/><path d="M30 27.2h11l-10.1 10.1h-11z" fill="#cf3027"/><path d="M52 27.2h11l-10.1 10.1h-11z" fill="#cf3027"/></g></svg><div>
+      <h1><i>XER</i> <b>HOLD</b>POINT</h1>
+      <div class="tag">Release control for schedule files</div>
+    </div></div>
+    <div class="meta">Rev 3.2 · XER only<br>Runs on this device · no network
+      <div style="margin-top:9px">
+        <button class="helpbtn" id="decodeOpen" type="button">Decode a report</button>
+        <button class="helpbtn" id="helpOpen" type="button">Help &amp; reference</button></div>
+    </div>
+  </div>
+
+  <p class="standfirst">Make a share-safe copy of a P6 programme. Names become codes, everything the
+    tool does not recognise as schedule structure is removed, and <b>the logic, durations, dates,
+    float and calendars are left exactly as they were</b> — so the copy still schedules identically.</p>
+
+  <div class="sheet"><div class="hd"><span class="step">01</span><h2>Choose your XER files</h2></div>
+    <div class="bd">
+      <div class="drop" id="drop"><b>Drop .xer files here</b>
+        <span class="mut">or click to browse. Several exports at once share one key, so the same
+        activity keeps the same code across all of them.</span></div>
+      <input id="file" type="file" accept=".xer" multiple hidden>
+      <div style="margin-top:12px;display:flex;gap:9px;flex-wrap:wrap">
+        <button class="btn" id="browse" type="button">Browse files</button>
+        <button class="btn" id="clear" type="button">Clear files</button>
+        <button class="btn" id="reset" type="button">Reset everything</button>
+      </div>
+      <ul class="files" id="fl"></ul>
+      <div id="reject"></div>
+    </div>
+  </div>
+
+  <div class="sheet"><div class="hd"><span class="step">02</span><h2>Choose how much to share</h2></div>
+    <div class="bd">
+      <p class="mut" style="margin-top:0">Each level states exactly what the recipient can and cannot see.</p>
+      <label class="lvl on"><input type="radio" name="lvl" value="1" checked> <b>1 · Logic only</b>
+        <div class="d">Activities, logic, durations, dates and calendars. No resources, no cost.</div></label>
+      <label class="lvl"><input type="radio" name="lvl" value="2"> <b>2 · Resources, no money</b>
+        <div class="d">Resource quantities and assignments kept. Every cost value set to zero.</div></label>
+      <label class="lvl"><input type="radio" name="lvl" value="3"> <b>3 · Cost shape, no cash</b>
+        <div class="d">Keeps the proportions and the cashflow curve. Removes the cash values.</div>
+        <div class="sub" id="sub3" hidden>
+          <label><input type="radio" name="basis" value="index" checked> Scale everything to a
+            1000-point total <span class="mut">— results come back in points, not currency</span></label>
+          <label><input type="radio" name="basis" value="secret"> Multiply by a number only you know
+            <span class="mut">— divide any figure we return by your number to read real money</span></label>
+          <div id="secwrap" hidden style="margin-top:7px">
+            <span class="eyebrow">Your multiplier</span>
+            <input id="secret" type="text" inputmode="decimal" placeholder="e.g. 0.137" style="max-width:220px">
+          </div>
+        </div></label>
+      <label class="lvl"><input type="radio" name="lvl" value="4"> <b>4 · Real cost</b>
+        <div class="d">Cash values and currency kept. Names are still replaced with codes.</div></label>
+      <button class="btn solid wide" id="go" disabled>Prepare the scrubbed copy</button>
+    </div>
+  </div>
+
+  <div id="out"></div>
+
+  <div class="foot" id="foot">
+    <b>XER Holdpoint Rev 3.2</b> — release control for schedule files. Reads Arabic (Windows-1256)
+    and Cyrillic (Windows-1251) exports correctly. &nbsp;
+    <a href="#" id="footST" style="color:var(--seal)">Run the built-in self-test</a>
+    &nbsp;&middot;&nbsp; Support: <a href="mailto:archie.xer@gmail.com"
+    style="color:var(--seal)">archie.xer@gmail.com</a><br>
+    <b>Kept:</b> activity ids, logic links, lags, durations, all dates, float, constraints, calendars,
+    progress, scheduling options. <b>Replaced with codes:</b> project, WBS, activity, calendar,
+    resource, role, cost-account and OBS names. <b>Removed:</b> notebooks, user-defined fields,
+    activity codes, documents, expenses, risks, issues, steps, POBS, contacts, employee codes, usernames,
+    database identifiers, project URLs and file paths — plus every table and field not on the keep list.
+    <br><br>Not affiliated with, endorsed by or sponsored by Oracle. Oracle, Primavera and P6 are
+    trademarks of Oracle Corporation. This tool reads the XER text format and never modifies your file.
+  </div>
+</div>
+
+<div class="decode" id="decode" role="dialog" aria-modal="true" aria-label="Decode a returned report">
+  <div class="bar2">
+    <h2><b>XER HOLD</b><span>POINT</span> &nbsp;Decode a report</h2>
+    <span>
+      <button class="btn" id="dcReset" type="button" style="background:#fff">Clear</button>
+      <button class="btn" id="dcClose" type="button" style="background:#fff">Close</button>
+    </span>
+  </div>
+  <div class="inner">
+    <p class="mut" style="margin-top:0">Your analyst replies <i>&ldquo;ACT-00147 is driving the
+      critical path&rdquo;</i>. Load the key for that batch and paste their text in &mdash; it comes
+      back readable. Nothing leaves this page, and the key is discarded when you close.</p>
+
+    <div class="sheet"><div class="hd"><span class="step">01</span><h2>Load the key for that batch</h2></div>
+      <div class="bd">
+        <p class="mut" style="margin-top:0">The <code>KEY_&hellip;.csv</code> you saved, or the
+          encrypted <code>KEY_&hellip;.json</code>. Match the batch reference to the file you sent.</p>
+        <input id="dkFile" type="file" accept=".csv,.json" hidden>
+        <button class="btn" id="dkBrowse" type="button">Choose key file</button>
+        <div id="dkPwWrap" hidden style="margin-top:12px">
+          <span class="eyebrow">Passphrase for the encrypted key</span>
+          <input id="dkPw" type="text" style="max-width:320px" placeholder="the passphrase you chose">
+          <div style="margin-top:8px"><button class="btn" id="dkGo" type="button">Unlock the key</button></div>
+        </div>
+        <div id="dkState"></div>
+      </div>
+    </div>
+
+    <div class="sheet"><div class="hd"><span class="step">02</span><h2>Paste what came back</h2></div>
+      <div class="bd">
+        <textarea id="dcIn" placeholder="Paste the report, email or note here. Any codes in it will be replaced with the real names."></textarea>
+        <button class="btn solid wide" id="dcRun" disabled>Decode it</button>
+        <div id="dcOut"></div>
+      </div>
+    </div>
+
+    <div class="note">The decoded text is the sensitive version &mdash; it names your project and
+      your activities again. Treat it like the original programme, not like the scrubbed copy.</div>
+  </div>
+</div>
+
+<div class="printView" id="printView" role="dialog" aria-modal="true" aria-label="Printable release certificate">
+  <div class="pbar">
+    <span class="t">Print preview &mdash; release certificate</span>
+    <span>
+      <button class="btn solid" id="printNow" type="button">Print</button>
+      <button class="btn" id="printClose" type="button" style="background:#fff">Close</button>
+    </span>
+  </div>
+  <div class="sheetdoc" id="printBody"></div>
+</div>
+
+<div class="help" id="help" role="dialog" aria-modal="true" aria-label="Holdpoint help and reference">
+  <div class="bar2">
+    <h2><b>XER HOLD</b><span>POINT</span> &nbsp;Help &amp; reference</h2>
+    <button class="btn" id="helpClose" type="button" style="background:#fff;border-color:#fff">Close</button>
+  </div>
+  <div class="body"><nav id="helpNav"></nav><main id="helpMain"><div class="inner" id="helpInner"></div></main></div>
+</div>
+
+<script>
+'use strict';
+/* ==========================================================================================
+ * HOLDPOINT Rev 3.2 — single file, offline, no network of any kind.
+ * FAIL-SAFE ALLOWLIST: a table is kept only if it is in POLICY; a field is kept verbatim only if
+ * classified structural. Unknown table, unknown field, new field in a future P6 — dropped or
+ * blanked BY DEFAULT and reported. See the audit certificate for what happened to your file.
+ * ========================================================================================== */
+
+/* ----------------------------------------------------------------- SHA-256 (pure JS, no deps)
+ * Written out rather than using crypto.subtle so the hash works identically whether the file is
+ * opened from disk, from a packaged app, or over http. No secure-context dependency. */
+var SHA_K=[0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,
+0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,
+0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,
+0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,
+0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,
+0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2];
+function sha256Hex(u8){
+  var H=[0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19];
+  var ml=u8.length, withOne=ml+1, k=(56-withOne%64+64)%64, total=withOne+k+8;
+  var m=new Uint8Array(total); m.set(u8); m[ml]=0x80;
+  var hi=Math.floor(ml/536870912), lo=(ml*8)>>>0;
+  m[total-8]=(hi>>>24)&255; m[total-7]=(hi>>>16)&255; m[total-6]=(hi>>>8)&255; m[total-5]=hi&255;
+  m[total-4]=(lo>>>24)&255; m[total-3]=(lo>>>16)&255; m[total-2]=(lo>>>8)&255; m[total-1]=lo&255;
+  var w=new Int32Array(64);
+  function rr(x,n){ return (x>>>n)|(x<<(32-n)); }
+  for(var off=0; off<total; off+=64){
+    for(var i=0;i<16;i++) w[i]=(m[off+i*4]<<24)|(m[off+i*4+1]<<16)|(m[off+i*4+2]<<8)|m[off+i*4+3];
+    for(i=16;i<64;i++){
+      var s0=rr(w[i-15],7)^rr(w[i-15],18)^(w[i-15]>>>3);
+      var s1=rr(w[i-2],17)^rr(w[i-2],19)^(w[i-2]>>>10);
+      w[i]=(w[i-16]+s0+w[i-7]+s1)|0;
+    }
+    var a=H[0],b=H[1],c=H[2],d=H[3],e=H[4],f=H[5],g=H[6],h=H[7];
+    for(i=0;i<64;i++){
+      var S1=rr(e,6)^rr(e,11)^rr(e,25), ch=(e&f)^(~e&g);
+      var t1=(h+S1+ch+SHA_K[i]+w[i])|0;
+      var S0=rr(a,2)^rr(a,13)^rr(a,22), mj=(a&b)^(a&c)^(b&c);
+      var t2=(S0+mj)|0;
+      h=g; g=f; f=e; e=(d+t1)|0; d=c; c=b; b=a; a=(t1+t2)|0;
+    }
+    H[0]=(H[0]+a)|0; H[1]=(H[1]+b)|0; H[2]=(H[2]+c)|0; H[3]=(H[3]+d)|0;
+    H[4]=(H[4]+e)|0; H[5]=(H[5]+f)|0; H[6]=(H[6]+g)|0; H[7]=(H[7]+h)|0;
+  }
+  return H.map(function(x){ return ('00000000'+(x>>>0).toString(16)).slice(-8); }).join('');
+}
+function sha256Text(s){ return sha256Hex(new TextEncoder().encode(s)); }
+
+/* ============================================================== POLICY — the keep list =====
+ * S    structural, kept verbatim        C:X  identifying name, replaced with a code
+ * M    money, follows the level         B    always emptied
+ * CAL  calendar definition blob         CUR  currency label (kept only at level 4)
+ * FS   P6 display mask / option list                                                        */
+var APP_REV='Rev 3.2';
+var SUPPORT_EMAIL='archie.xer@gmail.com';
+
+var POLICY = {
+  PROJECT:{note:'project header',L:1,f:{proj_id:'S',fy_start_month_num:'S',chng_eff_cmp_pct_flag:'S',
+    rsrc_self_add_flag:'S',allow_complete_flag:'S',rsrc_multi_assign_flag:'S',
+    ts_rsrc_mark_act_finish_flag:'S',ts_rsrc_vw_inact_actv_flag:'S',checkout_flag:'S',project_flag:'S',
+    step_complete_flag:'S',cost_qty_recalc_flag:'S',sum_only_flag:'S',batch_sum_flag:'S',
+    name_sep_char:'FS',def_complete_pct_type:'S',proj_short_name:'C:P',acct_id:'S',orig_proj_id:'S',
+    source_proj_id:'S',base_type_id:'S',clndr_id:'S',sum_base_proj_id:'S',task_code_base:'S',
+    task_code_step:'S',priority_num:'S',wbs_max_sum_level:'S',risk_level:'S',strgy_priority_num:'S',
+    last_checksum:'B',critical_drtn_hr_cnt:'S',def_cost_per_qty:'M',last_recalc_date:'S',
+    plan_start_date:'S',plan_end_date:'S',scd_end_date:'S',add_date:'S',sum_data_date:'S',
+    last_tasksum_date:'S',fcst_start_date:'S',def_duration_type:'S',task_code_prefix:'B',guid:'B',
+    def_qty_type:'S',add_by_name:'B',web_local_root_path:'B',proj_url:'B',def_rate_type:'S',
+    add_act_remain_flag:'S',act_this_per_link_flag:'S',def_task_type:'S',act_pct_link_flag:'S',
+    critical_path_type:'S',task_code_prefix_flag:'S',def_rollup_dates_flag:'S',
+    use_project_baseline_flag:'S',rem_target_link_flag:'S',reset_planned_flag:'S',
+    allow_neg_act_flag:'S',sum_assign_level:'S',last_fin_dates_id:'S',last_baseline_update_date:'S',
+    cr_external_key:'B',apply_actuals_date:'S',intg_proj_type:'S',loaded_scope_level:'S',
+    export_flag:'S',new_fin_dates_id:'S',next_data_date:'S',close_period_flag:'S',
+    trsrcsum_loaded:'S',plan_open_state:'S'}},
+  PROJWBS:{note:'work breakdown structure',L:1,f:{wbs_id:'S',proj_id:'S',obs_id:'S',seq_num:'S',
+    est_wt:'S',proj_node_flag:'S',sum_data_flag:'S',status_code:'S',wbs_short_name:'C:W',
+    wbs_name:'C:WBSNAME',phase_id:'S',parent_wbs_id:'S',ev_user_pct:'S',ev_etc_user_value:'S',
+    orig_cost:'M',indep_remain_total_cost:'M',ann_dscnt_rate_pct:'S',dscnt_period_type:'S',
+    indep_remain_work_qty:'S',anticip_start_date:'S',anticip_end_date:'S',ev_compute_type:'S',
+    ev_etc_compute_type:'S',guid:'B',tmpl_guid:'B',plan_open_state:'S'}},
+  TASK:{note:'activities',L:1,f:{task_id:'S',proj_id:'S',wbs_id:'S',clndr_id:'S',est_wt:'S',
+    phys_complete_pct:'S',rev_fdbk_flag:'S',lock_plan_flag:'S',auto_compute_act_flag:'S',
+    complete_pct_type:'S',task_type:'S',duration_type:'S',review_type:'S',status_code:'S',
+    task_code:'C:A',task_name:'C:TASKNAME',rsrc_id:'S',total_float_hr_cnt:'S',free_float_hr_cnt:'S',
+    remain_drtn_hr_cnt:'S',act_work_qty:'S',remain_work_qty:'S',target_work_qty:'S',
+    target_drtn_hr_cnt:'S',target_equip_qty:'S',act_equip_qty:'S',remain_equip_qty:'S',cstr_date:'S',
+    act_start_date:'S',act_end_date:'S',late_start_date:'S',late_end_date:'S',expect_end_date:'S',
+    early_start_date:'S',early_end_date:'S',restart_date:'S',reend_date:'S',target_start_date:'S',
+    target_end_date:'S',review_end_date:'S',rem_late_start_date:'S',rem_late_end_date:'S',
+    cstr_type:'S',priority_type:'S',suspend_date:'S',resume_date:'S',float_path:'S',
+    float_path_order:'S',guid:'B',tmpl_guid:'B',cstr_date2:'S',cstr_type2:'S',driving_path_flag:'S',
+    act_this_per_work_qty:'S',act_this_per_equip_qty:'S',external_early_start_date:'S',
+    external_late_end_date:'S',create_date:'S',update_date:'S',create_user:'B',update_user:'B'}},
+  TASKPRED:{note:'logic links',L:1,f:{task_pred_id:'S',task_id:'S',pred_task_id:'S',proj_id:'S',
+    pred_proj_id:'S',pred_type:'S',lag_hr_cnt:'S',float_path:'S',aref:'S',arls:'S'}},
+  CALENDAR:{note:'calendars',L:1,f:{clndr_id:'S',default_flag:'S',clndr_name:'C:CAL',proj_id:'S',
+    base_clndr_id:'S',last_chng_date:'S',clndr_type:'S',day_hr_cnt:'S',week_hr_cnt:'S',
+    month_hr_cnt:'S',year_hr_cnt:'S',clndr_data:'CAL'}},
+  SCHEDOPTIONS:{note:'scheduling settings',L:1,f:{schedoptions_id:'S',proj_id:'S',
+    sched_outer_depend_type:'S',sched_open_critical_flag:'S',sched_lag_early_start_flag:'S',
+    sched_retained_logic:'S',sched_setplantoforecast:'S',sched_float_type:'S',
+    sched_calendar_on_relationship_lag:'S',sched_use_expect_end_flag:'S',sched_progress_override:'S',
+    level_float_thrs_cnt:'S',level_outer_assign_flag:'S',level_outer_assign_priority:'S',
+    level_over_alloc_pct:'S',level_within_float_flag:'S',level_keep_sched_date_flag:'S',
+    level_all_rsrc_flag:'S',sched_use_project_end_date_for_float:'S',
+    enable_multiple_longest_path_calc:'S',limit_multiple_longest_path_calc:'S',
+    max_multiple_longest_path:'S',use_total_float_multiple_longest_paths:'S',
+    key_activity_for_multiple_longest_paths:'S',LevelPriorityList:'FS'}},
+  CURRTYPE:{note:'currency',L:1,f:{curr_id:'S',decimal_digit_cnt:'S',curr_symbol:'CUR',
+    decimal_symbol:'S',digit_group_symbol:'S',pos_curr_fmt_type:'FS',neg_curr_fmt_type:'FS',
+    curr_type:'CUR',curr_short_name:'CUR',group_digit_cnt:'S',base_exch_rate:'S'}},
+  OBS:{note:'organisational breakdown',L:1,f:{obs_id:'S',parent_obs_id:'S',guid:'B',seq_num:'S',
+    obs_name:'C:OBS',obs_descr:'B'}},
+  RSRC:{note:'resources',L:2,f:{rsrc_id:'S',parent_rsrc_id:'S',clndr_id:'S',role_id:'S',shift_id:'B',
+    ts_approve_user_id:'B',user_id:'B',pobs_id:'B',guid:'B',rsrc_seq_num:'S',email_addr:'B',
+    employee_code:'B',office_phone:'B',other_phone:'B',rsrc_name:'C:RES',rsrc_short_name:'C:RSH',
+    rsrc_title_name:'B',def_qty_per_hr:'S',cost_qty_type:'S',ot_factor:'S',active_flag:'S',
+    auto_compute_act_flag:'S',def_cost_qty_link_flag:'S',ot_flag:'S',timesheet_flag:'S',
+    xfer_complete_day_cnt:'S',xfer_notstart_day_cnt:'S',curr_id:'S',unit_id:'S',rsrc_type:'S',
+    rsrc_notes:'B',load_tasks_flag:'S',level_flag:'S',last_checksum:'B'}},
+  RSRCRATE:{note:'resource rates',L:2,f:{rsrc_rate_id:'S',rsrc_id:'S',max_qty_per_hr:'S',
+    cost_per_qty:'M',start_date:'S',shift_period_id:'B',cost_per_qty2:'M',cost_per_qty3:'M',
+    cost_per_qty4:'M',cost_per_qty5:'M'}},
+  TASKRSRC:{note:'resource assignments',L:2,f:{taskrsrc_id:'S',task_id:'S',proj_id:'S',
+    cost_qty_link_flag:'S',role_id:'S',acct_id:'S',rsrc_id:'S',pobs_id:'B',skill_level:'S',
+    pend_complete_pct:'S',remain_qty:'S',pend_remain_qty:'S',target_qty:'S',remain_qty_per_hr:'S',
+    target_lag_drtn_hr_cnt:'S',target_qty_per_hr:'S',act_ot_qty:'S',act_reg_qty:'S',
+    relag_drtn_hr_cnt:'S',ot_factor:'S',cost_per_qty:'M',target_cost:'M',act_reg_cost:'M',
+    act_ot_cost:'M',remain_cost:'M',act_start_date:'S',act_end_date:'S',restart_date:'S',
+    reend_date:'S',target_start_date:'S',target_end_date:'S',rem_late_start_date:'S',
+    rem_late_end_date:'S',rollup_dates_flag:'S',target_crv:'S',remain_crv:'S',actual_crv:'S',
+    ts_pend_act_end_flag:'S',guid:'B',rate_type:'S',act_this_per_cost:'M',act_this_per_qty:'S',
+    curv_id:'B',rsrc_type:'S',cost_per_qty_source_type:'S',create_user:'B',create_date:'S',
+    has_rsrchours:'S',taskrsrc_sum_id:'S'}},
+  ACCOUNT:{note:'cost accounts',L:2,f:{acct_id:'S',parent_acct_id:'S',acct_seq_num:'S',
+    acct_name:'C:ACC',acct_short_name:'C:ACS',acct_descr:'B'}},
+  ROLES:{note:'roles',L:2,f:{role_id:'S',parent_role_id:'S',seq_num:'S',role_name:'C:ROL',
+    role_short_name:'C:RSN',pobs_id:'B',def_cost_qty_link_flag:'S',cost_qty_type:'S',role_descr:'B',
+    last_checksum:'B'}}
+};
+/* Tables considered and deliberately dropped. Anything absent from POLICY drops anyway — this list
+   exists only so the ledger can say WHY, instead of "unrecognised". */
+var KNOWN_DROPS={TASKMEMO:'activity notebooks (free text)',WBSMEMO:'WBS notebooks (free text)',
+ MEMOTYPE:'notebook topic names',DOCUMENT:'document register (titles, paths, authors)',
+ TASKDOC:'activity-to-document links',UDFTYPE:'user-defined field definitions',
+ UDFVALUE:'user-defined field values (free text)',ACTVTYPE:'activity code types',
+ ACTVCODE:'activity code values (often carry client and package names)',
+ TASKACTV:'activity code assignments',PROJPCAT:'project category assignments',
+ PCATVAL:'project category values',PCATTYPE:'project category types',
+ PROJISSU:'project issues (free text)',PROJRISK:'risk register (free text)',
+ RISKTYPE:'risk categories',POBS:'performing organisation (names managers)',
+ RSRCROLE:'resource-role assignments (repeats resource names)',RCATVAL:'resource category values',
+ RCATTYPE:'resource category types',RSRCRCAT:'resource category assignments',
+ SHIFT:'shift definitions',SHIFTPER:'shift periods',RSRCCURV:'resource curves',
+ RSRCCURVDATA:'resource curve data',
+ PROJCOST:'expenses (vendor names, PO numbers, expense descriptions)',
+ PROJFUND:'funding sources',FUNDSRC:'funding source names',FINTMPL:'financial templates',
+ RSRCFIN:'resource financial periods',TASKFIN:'activity financial periods',
+ RSRCHR:'timesheet hours',RSRCLEVELLIST:'levelling lists',THRSPARM:'threshold parameters',
+ TASKPROC:'activity steps (free text)',ROLERATE:'role rates',PROJEST:'estimates',
+ WBSBUDG:'WBS budget logs',WBSSTEP:'WBS milestones (free text)',
+ TRSRCFIN:'assignment financial periods',PROJPROP:'project properties',USERS:'user accounts',
+ OBSPROJ:'OBS project links'};
+
+var CAL_TOKENS={CalendarData:1,DaysOfWeek:1,Exceptions:1,VIEW:1,ShowTotal:1,HoursPerDay:1,
+ HoursPerWeek:1,HoursPerMonth:1,HoursPerYear:1};
+
+function pad(n,w){var s=String(n);while(s.length<w)s='0'+s;return s;}
+/* Returns null when the value cannot be written as a plain decimal P6 would accept. The caller
+   must then empty the cell — never write "1e+21" into an XER, and never silently clamp.
+   Precision is adaptive: a fixed six decimal places destroys small values once they are scaled
+   down (a 0.02 line item in a fifty-million-pound file rounds to nothing), so the number of
+   decimals grows as the magnitude falls, holding roughly nine significant figures throughout. */
+function fmtNum(n){
+  if(!isFinite(n)||Math.abs(n)>=1e21)return null;
+  if(n===0)return '0';
+  var dec=Math.min(15,Math.max(6,8-Math.floor(Math.log10(Math.abs(n)))));
+  var s=n.toFixed(dec);
+  if(/e/i.test(s))return null;
+  s=s.replace(/\.?0+$/,'');
+  return (s===''||s==='-0')?'0':s;
+}
+var CODE_STYLE={TASKNAME:{t:'Activity ',w:5},WBSNAME:{t:'WBS element ',w:4},P:{t:'PROJ-',w:3},
+ A:{t:'ACT-',w:5},W:{t:'WBS-',w:4},CAL:{t:'CAL-',w:3},RES:{t:'Resource ',w:4},RSH:{t:'RES-',w:4},
+ ACC:{t:'Account ',w:4},ACS:{t:'ACC-',w:4},ROL:{t:'Role ',w:3},RSN:{t:'ROL-',w:3},OBS:{t:'OBS-',w:3}};
+function makeMapper(key){
+  return function(prefix,value){
+    if(value==null||value==='')return value;
+    var k=prefix+'\u0000'+value;
+    if(Object.prototype.hasOwnProperty.call(key.map,k))return key.map[k];
+    key.series[prefix]=(key.series[prefix]||0)+1;
+    var st=CODE_STYLE[prefix]||{t:prefix+'-',w:4};
+    var out=st.t+pad(key.series[prefix],st.w);
+    key.map[k]=out; key.rows.push({prefix:prefix,was:value,now:out});
+    return out;
+  };
+}
+function isCodeShaped(prefix,v){
+  if(v==='')return true;
+  var st=CODE_STYLE[prefix]||{t:prefix+'-',w:4};
+  return v.indexOf(st.t)===0 && /^\d+$/.test(v.slice(st.t.length));
+}
+var SAFE_STRUCT=/^$|^-?\d+(\.\d+)?$|^\d{4}-\d{2}-\d{2}( \d{2}:\d{2}(:\d{2})?)?$|^[YN]$|^[A-Za-z]{1,12}_[A-Za-z0-9_]+$|^[a-zA-Z0-9_,.\-+/:()]{1,24}$/;
+function structLooksSafe(v){return SAFE_STRUCT.test(v);}
+function formatLooksSafe(v){
+  if(v.length>128)return false;
+  if(/[A-Za-z]{2,}\s+[A-Za-z]{2,}/.test(v))return false;
+  return !/[\x00-\x08\x0a-\x1f]/.test(v);
+}
+function calLooksSafe(v){
+  var w=v.match(/[A-Za-z]{3,}/g)||[];
+  for(var i=0;i<w.length;i++){ if(!CAL_TOKENS[w[i]]) return w[i]; }
+  return null;
+}
+function levelPlan(level){
+  level=(level===1||level===2||level===3||level===4)?level:1;
+  return {level:level,
+    label:level===1?'Logic only — no resources, no cost'
+        :level===2?'Resources kept, every cost set to zero'
+        :level===3?'Cost shape kept, cash values removed'
+        :'Real cost values kept',
+    costMode:level===4?'keep':level===3?'scale':'zero'};
+}
+function totalMoney(files){
+  var total=0,cells=0;
+  files.forEach(function(f){
+    var table=null,F=[];
+    String(f.text||'').split(/\r?\n/).forEach(function(l){
+      var p=l.split('\t');
+      if(p[0]==='%T'){table=p[1];F=[];return;}
+      if(p[0]==='%F'){F=p.slice(1);return;}
+      if(p[0]!=='%R'||!POLICY[table])return;
+      var pol=POLICY[table].f;
+      for(var i=0;i<F.length;i++){
+        if(pol[F[i]]!=='M')continue;
+        var n=Number(p[i+1]);
+        if(isFinite(n)&&n!==0){total+=Math.abs(n);cells++;}
+      }
+    });
+  });
+  return {total:total,cells:cells};
+}
+function scrubOne(text,key,rep,plan,costFactor,keepCurrency){
+  var lines=String(text).split(/\r?\n/),out=[],table=null,F=[],live=false;
+  var mapv=makeMapper(key);
+  function bump(o,k){o[k]=(o[k]||0)+1;}
+  for(var li=0;li<lines.length;li++){
+    var line=lines[li],p=line.split('\t');
+    if(p[0]==='ERMHDR'){
+      for(var h=2;h<p.length;h++){
+        if(h===2)continue;
+        if(/^[A-Z]{3}$/.test(p[h])&&keepCurrency)continue;
+        if(p[h]!=='')rep.headerCleared++;
+        p[h]=(h===3)?'SCRUBBED':'';
+      }
+      out.push(p.join('\t'));continue;
+    }
+    if(p[0]==='%T'){
+      table=p[1];F=[];
+      var pol=POLICY[table];
+      live=!!pol&&plan.level>=pol.L;
+      if(!live){
+        rep.droppedTables[table]=KNOWN_DROPS[table]?KNOWN_DROPS[table]
+          :(pol?'resource layer — not included at this level':'not on the keep list');
+        if(!pol&&!KNOWN_DROPS[table])rep.unknownTables[table]=true;
+        continue;
+      }
+      out.push(line);continue;
+    }
+    if(p[0]==='%F'){if(!live)continue;F=p.slice(1);out.push(line);continue;}
+    if(p[0]==='%R'){
+      bump(rep.rowsIn,table);
+      if(!live){bump(rep.droppedRows,table);continue;}
+      var pf=POLICY[table].f;
+      /* Iterate the ROW, not the declared header. A row can carry more cells than %F declares
+         (mismatched exports, concatenated files, hand edits) or arrive before any %F at all. Those
+         cells have no declared name and therefore no policy, so they are emptied and reported. */
+      var width=Math.max(F.length,p.length-1);
+      for(var i=0;i<width;i++){
+        var name=F[i],cls=(name===undefined)?undefined:pf[name],v=p[i+1];
+        if(v==null)continue;
+        var ref=table+'.'+(name===undefined?('[undeclared column '+(i+1)+']'):name);
+        if(cls===undefined){
+          if(v!==''){p[i+1]='';bump(rep.blanked,ref);
+            if(!rep.unknownFields[ref])rep.unknownFields[ref]=v.slice(0,60);}
+          continue;
+        }
+        if(cls==='S'||cls==='FS')continue;
+        if(cls==='CAL'){bump(rep.kept,ref);continue;}
+        if(cls==='B'){if(v!==''){p[i+1]='';bump(rep.blanked,ref);}continue;}
+        if(cls==='CUR'){if(!keepCurrency&&v!==''){p[i+1]='';bump(rep.blanked,ref);}continue;}
+        if(cls==='M'){
+          if(v===''||v==='0')continue;
+          if(plan.costMode==='zero'){p[i+1]='0';bump(rep.zeroed,ref);}
+          else if(plan.costMode==='scale'){
+            var n=Number(v), q=isFinite(n)?fmtNum(n*costFactor):null;
+            if(q===null){p[i+1]='';bump(rep.blanked,ref);}
+            else {
+              p[i+1]=q; bump(rep.scaled,ref);
+              /* A non-zero cost that scales to nothing has been removed, not scaled. Say so. */
+              if(q==='0'&&n!==0) bump(rep.roundedAway,ref);
+            }
+          } else bump(rep.kept,ref);
+          continue;
+        }
+        if(cls.indexOf('C:')===0){
+          var nv=mapv(cls.slice(2),v);
+          if(nv!==v){p[i+1]=nv;bump(rep.coded,ref);}
+          continue;
+        }
+      }
+      bump(rep.rowsOut,table);out.push(p.join('\t'));continue;
+    }
+    out.push(line);
+  }
+  return out.join('\r\n');
+}
+function verify(files,plan,keepCurrency){
+  var findings=[],checked=0;
+  files.forEach(function(f){
+    var table=null,F=[],live=false,ln=0;
+    f.text.split(/\r?\n/).forEach(function(l){
+      ln++;var p=l.split('\t');
+      if(p[0]==='%T'){table=p[1];F=[];live=!!POLICY[table];return;}
+      if(p[0]==='%F'){F=p.slice(1);return;}
+      if(p[0]!=='%R')return;
+      if(!live){findings.push({sev:'BLOCK',where:f.name+' line '+ln,
+        what:'a row survived from table "'+table+'", which is not on the keep list'});return;}
+      var pf=POLICY[table].f;
+      /* Same rule as the transform: check the row, not the header. An undeclared cell is a leak. */
+      var width=Math.max(F.length,p.length-1);
+      for(var i=0;i<width;i++){
+        var name=F[i],cls=(name===undefined)?undefined:pf[name],v=p[i+1];
+        if(v==null||v==='')continue;
+        checked++;
+        var ref=table+'.'+(name===undefined?('[undeclared column '+(i+1)+']'):name);
+        if(cls===undefined){findings.push({sev:'BLOCK',where:f.name+' line '+ln,
+          what:'unknown field '+ref+' still holds a value',sample:v.slice(0,60)});continue;}
+        if(cls==='B'){findings.push({sev:'BLOCK',where:f.name+' line '+ln,
+          what:ref+' should have been emptied',sample:v.slice(0,60)});continue;}
+        if(cls==='CUR'){if(!keepCurrency)findings.push({sev:'BLOCK',where:f.name+' line '+ln,
+          what:ref+' should have been emptied',sample:v.slice(0,60)});continue;}
+        if(cls.indexOf('C:')===0){
+          if(!isCodeShaped(cls.slice(2),v))findings.push({sev:'BLOCK',where:f.name+' line '+ln,
+            what:ref+' is an identifying field that was not replaced with a code',sample:v.slice(0,60)});
+          continue;
+        }
+        if(cls==='M'){
+          if(plan.costMode==='zero'&&v!=='0')findings.push({sev:'BLOCK',where:f.name+' line '+ln,
+            what:ref+' should be zero at this level',sample:v.slice(0,40)});
+          continue;
+        }
+        if(cls==='CAL'){
+          var bad=calLooksSafe(v);
+          if(bad)findings.push({sev:'REVIEW',where:f.name+' line '+ln,
+            what:ref+' holds unexpected text inside the calendar definition',sample:bad});
+          continue;
+        }
+        if(cls==='FS'){
+          if(!formatLooksSafe(v))findings.push({sev:'REVIEW',where:f.name+' line '+ln,
+            what:ref+' is a P6 display or option setting with an unexpected value',sample:v.slice(0,60)});
+          continue;
+        }
+        if(cls==='S'&&!structLooksSafe(v))findings.push({sev:'REVIEW',where:f.name+' line '+ln,
+          what:ref+' is kept as structural data but does not look like a number, date or code',
+          sample:v.slice(0,60)});
+      }
+    });
+  });
+  var blocks=findings.filter(function(x){return x.sev==='BLOCK';});
+  var reviews=findings.filter(function(x){return x.sev==='REVIEW';});
+  return {verdict:blocks.length?'BLOCKED':reviews.length?'REVIEW':'PASSED',
+    cellsChecked:checked,blocks:blocks,reviews:reviews,
+    findings:blocks.concat(reviews).slice(0,300)};
+}
+function scrub(files,opts){
+  opts=opts||{};
+  var plan=levelPlan(opts.level), keepCurrency=plan.level===4;
+  var money=totalMoney(files), costFactor=1, costBasis, costNote;
+  if(plan.costMode==='keep'){costBasis='real';
+    costNote='Real cost values are retained. Names are still replaced with codes.';}
+  else if(plan.costMode==='zero'){costBasis=plan.level===1?'none':'zeroed';
+    costNote=plan.level===1?'No resource or cost data is included at all.'
+      :'Resource quantities are retained. Every cost value is set to zero.';}
+  else{
+    var sf=Number(opts.secretFactor);
+    /* A multiplier of exactly 1 is the identity: it would ship real money while the certificate
+       claimed the figures were meaningless without your number. Refused outright. */
+    if(opts.costBasis==='secret'&&isFinite(sf)&&sf>0&&sf!==1){
+      costFactor=sf;costBasis='secret-scaled';
+      costNote='Every cost was multiplied by a number you chose and did not share. Ratios and the '
+        +'cashflow shape survive; the absolute figures mean nothing without your multiplier.';
+    } else if(opts.costBasis==='secret'){
+      plan={level:plan.level,label:plan.label,costMode:'zero'};
+      costBasis='zeroed-refused';
+      costNote='The multiplier supplied was not usable (a multiplier of 1 would leave your real '
+        +'cash values untouched). Nothing was scaled. Every cost has been set to zero instead, so '
+        +'no cash value has been shared.';
+    } else if(money.total>0){
+      costFactor=1000/money.total;costBasis='indexed';
+      costNote='Every cost value was multiplied by one shared factor, chosen so that the cost values '
+        +'in this batch add up to 1000 points once signs are ignored. Ratios and the cashflow shape '
+        +'survive; the cash values do not. Any credits stay negative, so the signed total will be '
+        +'less than 1000.';
+    } else {
+      plan={level:plan.level,label:plan.label,costMode:'zero'};
+      costBasis='zeroed-fallback';
+      costNote='No cost values were found to normalise against, so every cost has been set to zero '
+        +'instead. Normalisation was NOT applied and no cash value has been shared.';
+    }
+  }
+  var key={map:{},series:{},rows:[]};
+  var rep={headerCleared:0,rowsIn:{},rowsOut:{},coded:{},blanked:{},zeroed:{},scaled:{},kept:{},roundedAway:{},droppedTables:{},
+           droppedRows:{},unknownTables:{},unknownFields:{}};
+  var out=files.map(function(f,i){
+    var text=scrubOne(f.text,key,rep,plan,costFactor,keepCurrency);
+    return {name:'SCRUBBED_'+opts.ref+'_'+pad(i+1,2)+'.xer',from:f.name,text:text,
+            inHash:sha256Text(f.text),outHash:sha256Text(text)};
+  });
+  /* costFactor stays internal on purpose: publishing it would let a reader recover the project
+     total from any single scaled value. It is never rendered and never written to the certificate. */
+  return {ref:opts.ref,plan:plan,files:out,key:key,report:rep,costBasis:costBasis,
+    costNote:costNote,check:(function(){
+      var chk=verify(out,plan,keepCurrency), n=0;
+      for(var k in rep.roundedAway) n+=rep.roundedAway[k];
+      if(n){
+        chk.reviews.push({sev:'REVIEW',where:'cost scaling',
+          what:n+' cost value'+(n===1?'':'s')+' became zero once scaled, so '+(n===1?'that line has':'those lines have')
+              +' effectively been removed from the cashflow rather than reduced',
+          sample:'consider your own multiplier instead of the 1000-point scale'});
+        chk.findings=chk.blocks.concat(chk.reviews).slice(0,300);
+        if(chk.verdict==='PASSED') chk.verdict='REVIEW';
+      }
+      return chk;
+    })()};
+}
+
+/* ============================================================== encryption for the key file
+ * Only the key file is offered encrypted, because the key is the one artefact that can undo the
+ * scrub. Uses the browser's own crypto; if that is unavailable the option is disabled rather than
+ * silently downgraded. */
+var CRYPTO_OK = !!(window.crypto && window.crypto.subtle && window.crypto.getRandomValues);
+function b64(u8){var s='';for(var i=0;i<u8.length;i++)s+=String.fromCharCode(u8[i]);return btoa(s);}
+function encryptKeyFile(plaintext,passphrase){
+  var salt=crypto.getRandomValues(new Uint8Array(16));
+  var iv=crypto.getRandomValues(new Uint8Array(12));
+  var enc=new TextEncoder();
+  return crypto.subtle.importKey('raw',enc.encode(passphrase),'PBKDF2',false,['deriveKey'])
+   .then(function(base){
+     return crypto.subtle.deriveKey(
+       {name:'PBKDF2',salt:salt,iterations:600000,hash:'SHA-256'},
+       base,{name:'AES-GCM',length:256},false,['encrypt']);
+   })
+   .then(function(k){ return crypto.subtle.encrypt({name:'AES-GCM',iv:iv},k,enc.encode(plaintext)); })
+   .then(function(ct){
+     return JSON.stringify({format:'holdpoint-key-v1',cipher:'AES-GCM-256',
+       kdf:'PBKDF2-SHA256',iterations:600000,salt:b64(salt),iv:b64(iv),
+       data:b64(new Uint8Array(ct)),
+       note:'Decrypt with the passphrase you chose. This file maps codes back to real names. '
+           +'It must never travel with the scrubbed schedule.'},null,2);
+   });
+}
+
+/* ================================================================================ interface */
+var picked=[], result=null, reviewed=false;
+var $=function(id){return document.getElementById(id);};
+function esc(s){return String(s==null?'':s).replace(/[&<>"']/g,function(c){
+  return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+
+/* The favicon is derived from the masthead mark at run time rather than kept as a second
+   hardcoded copy. One source, so the two can never drift apart. */
+(function(){
+  var m=document.querySelector('svg.mark'), link=document.getElementById('favicon');
+  if(!m||!link)return;
+  link.href='data:image/svg+xml,'+encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">'+m.innerHTML+'</svg>');
+})();
+
+/* Storage can be blocked outright (file:// in some browsers, strict privacy modes). If it is, show
+   the agreement every time rather than letting the whole script die on the first line. */
+var seenEula=false;
+try{ seenEula = !!sessionStorage.getItem('hp_eula'); }catch(e){}
+$('eula').style.display = seenEula ? 'none' : 'flex';
+$('eulaOk').onclick=function(){ try{sessionStorage.setItem('hp_eula','1');}catch(e){}
+  $('eula').style.display='none'; };
+
+function refresh(){
+  releaseUrls();
+  $('out').innerHTML=''; result=null; reviewed=false;
+  $('fl').innerHTML=picked.map(function(f,i){
+    return '<li><span class="nm" title="'+esc(f.name)+'">'+esc(f.name)+'</span>'+
+      '<span class="rt mut">'+Math.round(f.bytes/1024)+' KB &nbsp;'+
+      '<span class="x" data-i="'+i+'">remove</span></span></li>';
+  }).join('');
+  Array.prototype.forEach.call($('fl').querySelectorAll('.x'),function(x){
+    x.onclick=function(){picked.splice(+x.getAttribute('data-i'),1);refresh();};});
+  $('go').disabled = picked.length===0;
+}
+function decode(u8){
+  if(u8.length>=3&&u8[0]===0xEF&&u8[1]===0xBB&&u8[2]===0xBF)
+    return new TextDecoder('utf-8').decode(u8.subarray(3));
+  if(u8.length>=2&&u8[0]===0xFF&&u8[1]===0xFE) return new TextDecoder('utf-16le').decode(u8);
+  if(u8.length>=2&&u8[0]===0xFE&&u8[1]===0xFF) return new TextDecoder('utf-16be').decode(u8);
+  try{ return new TextDecoder('utf-8',{fatal:true}).decode(u8); }
+  catch(e){
+    var d1256=null,d1251=null;
+    try{d1256=new TextDecoder('windows-1256').decode(u8);}catch(e1){}
+    try{d1251=new TextDecoder('windows-1251').decode(u8);}catch(e2){}
+    var run=function(s,lo,hi){if(!s)return 0;var best=0,cur=0;
+      for(var i=0;i<s.length;i++){var c=s.charCodeAt(i);
+        if(c>=lo&&c<=hi){cur++;if(cur>best)best=cur;}else cur=0;}return best;};
+    var ar=run(d1256,0x600,0x6FF), cy=run(d1251,0x400,0x4FF);
+    if(ar>=4&&ar>=cy)return d1256;
+    if(cy>=4)return d1251;
+    return new TextDecoder('windows-1252').decode(u8);
+  }
+}
+function readFiles(list){
+  var rejected=[];
+  Array.prototype.forEach.call(list,function(file){
+    if(!/\.xer$/i.test(file.name)){ rejected.push(file.name); return; }
+    var r=new FileReader();
+    r.onload=function(){
+      var u8=new Uint8Array(r.result), text=decode(u8);
+      if(text.indexOf('ERMHDR')!==0 && text.indexOf('ERMHDR')<0){
+        showReject([file.name+' — this does not look like a P6 XER export (no ERMHDR header).']);
+        return;
+      }
+      picked.push({name:file.name,text:text,bytes:u8.length,order:file.name});
+      picked.sort(function(a,b){return a.order<b.order?-1:a.order>b.order?1:0;});
+      refresh();
+    };
+    r.readAsArrayBuffer(file);
+  });
+  if(rejected.length) showReject(rejected.map(function(n){
+    var ext=(n.split('.').pop()||'').toLowerCase();
+    if(ext==='xml') return n+' — PMXML is not supported. Export the project as XER from P6 instead. '
+      +'PMXML can carry whole baseline copies of the schedule inside it, and this tool does not yet '
+      +'read them, so it will not pretend to have cleaned one.';
+    if(ext==='csv'||ext==='xlsx'||ext==='xls') return n+' — spreadsheet exports are not supported. '
+      +'Their column headings are whatever layout you had on screen, so the tool cannot know what '
+      +'each column holds. Use the XER export instead.';
+    if(ext==='mpp') return n+' — Microsoft Project files are not supported.';
+    return n+' — only .xer files are accepted.';
+  }));
+}
+function showReject(msgs){
+  $('reject').innerHTML='<div class="warn"><b>Not loaded</b><ul style="margin:6px 0 0;padding-left:20px">'
+    +msgs.map(function(m){return '<li>'+esc(m)+'</li>';}).join('')+'</ul></div>';
+}
+$('drop').onclick=function(){$('file').click();};
+$('browse').onclick=function(e){e.stopPropagation();$('file').click();};
+$('clear').onclick=function(){picked=[];$('reject').innerHTML='';refresh();};
+/* Full reset. Stale state in a tool like this is a safety problem, not an inconvenience — the
+   wrong level left selected, or a previous batch's download links still live on the page, is
+   exactly how the wrong file gets sent. This returns everything to first-run condition. */
+$('reset').onclick=function(){
+  releaseUrls(); resetDecode();
+  picked=[]; result=null; reviewed=false;
+  document.querySelector('input[name=lvl][value="1"]').checked=true;
+  Array.prototype.forEach.call(document.querySelectorAll('label.lvl'),function(l,i){
+    l.classList.toggle('on',i===0);});
+  $('sub3').hidden=true; $('secwrap').hidden=true;
+  var idx=document.querySelector('input[name=basis][value="index"]'); if(idx) idx.checked=true;
+  if($('secret')) $('secret').value='';
+  $('reject').innerHTML='<div class="note"><b>Reset.</b> Files, options, results, keys and download '
+    +'links have all been cleared. Nothing from the previous batch remains on this page.</div>';
+  $('out').innerHTML='';
+  refresh();
+  $('fl').innerHTML='';
+};
+$('file').onchange=function(){$('reject').innerHTML='';readFiles($('file').files);$('file').value='';};
+['dragenter','dragover'].forEach(function(ev){$('drop').addEventListener(ev,function(e){
+  e.preventDefault();$('drop').classList.add('hot');});});
+['dragleave','drop'].forEach(function(ev){$('drop').addEventListener(ev,function(e){
+  e.preventDefault();$('drop').classList.remove('hot');});});
+$('drop').addEventListener('drop',function(e){
+  $('reject').innerHTML='';
+  if(e.dataTransfer&&e.dataTransfer.files)readFiles(e.dataTransfer.files);});
+
+function selLevel(){var r=document.querySelector('input[name=lvl]:checked');return r?+r.value:1;}
+function selBasis(){var r=document.querySelector('input[name=basis]:checked');return r?r.value:'index';}
+Array.prototype.forEach.call(document.querySelectorAll('input[name=lvl]'),function(r){
+  r.addEventListener('change',function(){
+    Array.prototype.forEach.call(document.querySelectorAll('label.lvl'),function(l){
+      l.classList.toggle('on', l.contains(document.querySelector('input[name=lvl]:checked')));});
+    $('sub3').hidden = selLevel()!==3;
+    releaseUrls(); $('out').innerHTML=''; result=null; reviewed=false;  // stale results never linger
+  });
+});
+Array.prototype.forEach.call(document.querySelectorAll('input[name=basis]'),function(r){
+  r.addEventListener('change',function(){ $('secwrap').hidden = selBasis()!=='secret';
+    releaseUrls(); $('out').innerHTML=''; result=null; reviewed=false; });
+});
+
+function countAll(o){var n=0;for(var k in o)n+=o[k];return n;}
+/* Every object URL is tracked and released when the panel is rebuilt. Left unrevoked, each run
+   would leave a live handle to your scrubbed schedule alive in the page for the whole session. */
+var liveUrls=[];
+function blobUrl(text,mime){
+  var u=URL.createObjectURL(new Blob([text],{type:mime||'text/plain'}));
+  liveUrls.push(u); return u;
+}
+function releaseUrls(){
+  liveUrls.forEach(function(u){ try{URL.revokeObjectURL(u);}catch(e){} });
+  liveUrls=[];
+}
+
+function buildCertificate(res,accepted){
+  var r=res.report, L=[];
+  L.push('XER HOLDPOINT — RELEASE CERTIFICATE');
+  L.push('='.repeat(64));
+  L.push('Tool version      : XER Holdpoint Rev 3.2');
+  L.push('Prepared          : '+new Date().toISOString());
+  L.push('Batch reference   : '+res.ref);
+  L.push('Sharing level     : '+res.plan.level+' — '+res.plan.label);
+  L.push('Cost basis        : '+res.costBasis);
+  L.push('                    '+res.costNote);
+  L.push('Integrity check   : '+res.check.verdict+'  ('+res.check.cellsChecked+' values examined, '
+    +res.check.blocks.length+' blocking, '+res.check.reviews.length+' for review)');
+  L.push('User confirmation : '+(accepted?'reviewed the output before release':'NOT CONFIRMED'));
+  L.push('');
+  L.push('FILES');
+  L.push('-'.repeat(64));
+  res.files.forEach(function(f){
+    L.push('  source        : '+f.from);
+    L.push('  source SHA-256: '+f.inHash);
+    L.push('  output        : '+f.name);
+    L.push('  output SHA-256: '+f.outHash);
+    L.push('');
+  });
+  L.push('WHAT WAS DONE');
+  L.push('-'.repeat(64));
+  L.push('  header fields cleared          : '+r.headerCleared);
+  L.push('  name values replaced by codes  : '+countAll(r.coded));
+  L.push('  values emptied                 : '+countAll(r.blanked));
+  L.push('  cost values set to zero        : '+countAll(r.zeroed));
+  L.push('  cost values scaled             : '+countAll(r.scaled));
+  if(countAll(r.roundedAway))
+    L.push('  cost values lost to rounding   : '+countAll(r.roundedAway)
+      +'  (non-zero costs that became zero once scaled)');
+  L.push('  rows dropped                   : '+countAll(r.droppedRows));
+  L.push('  values retained by policy      : '+countAll(r.kept)+'  (calendar definitions'
+    +(res.plan.level===4?' and real cost values)':')'));
+  L.push('');
+  L.push('RECONCILIATION - ROWS IN AGAINST ROWS OUT');
+  L.push('-'.repeat(64));
+  L.push('  ' + 'table'.padEnd(18) + 'in'.padStart(8) + 'out'.padStart(8) + '   status');
+  var rt=Object.keys(r.rowsIn).sort(), tIn=0, tOut=0;
+  rt.forEach(function(t){
+    var i=r.rowsIn[t]||0, o=r.rowsOut[t]||0; tIn+=i; tOut+=o;
+    L.push('  ' + t.padEnd(18) + String(i).padStart(8) + String(o).padStart(8) + '   '
+      + (i===o ? 'complete' : 'removed in full - ' + (r.droppedTables[t]||'')));
+  });
+  L.push('  ' + 'TOTAL'.padEnd(18) + String(tIn).padStart(8) + String(tOut).padStart(8));
+  L.push('');
+  L.push('TABLES REMOVED IN FULL');
+  L.push('-'.repeat(64));
+  var dt=Object.keys(r.droppedTables).sort();
+  if(!dt.length) L.push('  (none)');
+  dt.forEach(function(t){L.push('  '+t.padEnd(16)+(r.droppedRows[t]||0)+' rows — '+r.droppedTables[t]);});
+  L.push('');
+  L.push('FIELDS EMPTIED, BY FIELD');
+  L.push('-'.repeat(64));
+  Object.keys(r.blanked).sort().forEach(function(k){L.push('  '+k.padEnd(40)+r.blanked[k]);});
+  var uf=Object.keys(r.unknownFields);
+  if(uf.length){
+    L.push('');
+    L.push('FIELDS NOT ON THE KEEP LIST — EMPTIED AS A PRECAUTION');
+    L.push('-'.repeat(64));
+    L.push('  These were not recognised. They may come from a newer P6 release. They were emptied');
+    L.push('  because the tool keeps only what it recognises.');
+    uf.sort().forEach(function(k){L.push('  '+k);});
+  }
+  var ut=Object.keys(r.unknownTables);
+  if(ut.length){
+    L.push('');
+    L.push('TABLES NOT ON THE KEEP LIST — REMOVED AS A PRECAUTION');
+    L.push('-'.repeat(64));
+    ut.sort().forEach(function(k){L.push('  '+k+'  ('+(r.droppedRows[k]||0)+' rows)');});
+  }
+  if(res.check.findings.length){
+    L.push('');
+    L.push('INTEGRITY CHECK ITEMS');
+    L.push('-'.repeat(64));
+    res.check.findings.forEach(function(x){
+      L.push('  ['+x.sev+'] '+x.where+' — '+x.what+(x.sample?('  value: '+x.sample):''));});
+  }
+  L.push('');
+  L.push('WHAT THIS CERTIFICATE DOES NOT SAY');
+  L.push('-'.repeat(64));
+  L.push('  It records what the tool removed. It is not a warranty that the output contains nothing');
+  L.push('  sensitive. Real dates, durations, working calendars and network shape are retained by');
+  L.push('  design, and a distinctive project can sometimes be recognised from those alone. The');
+  L.push('  person releasing the file is responsible for checking it.');
+  L.push('');
+  L.push('  Support: '+SUPPORT_EMAIL+' - quote the batch reference above.');
+  return L.join('\r\n');
+}
+/* One encoder for every CSV this tool writes. Escapes quotes, and neutralises the leading
+   characters that make a spreadsheet treat a cell as a formula — a scrubbed name is data, and it
+   must never execute when someone opens the key file in Excel. */
+function csvCell(v){
+  var s=String(v==null?'':v);
+  if(/^[=+\-@\t\r]/.test(s)) s="'"+s;
+  return '"'+s.replace(/"/g,'""')+'"';
+}
+function buildKeyCsv(res){
+  var rows=['type,code,original_value'];
+  res.key.rows.forEach(function(r){
+    rows.push([csvCell(r.prefix),csvCell(r.now),csvCell(r.was)].join(','));});
+  return rows.join('\r\n');
+}
+function buildRemovalCsv(res){
+  var r=res.report, out=['action,table_or_field,count,reason'];
+  function line(a,k,n,why){ out.push([csvCell(a),csvCell(k),n,csvCell(why)].join(',')); }
+  Object.keys(r.rowsIn).sort().forEach(function(t){
+    var i=r.rowsIn[t]||0,o=r.rowsOut[t]||0;
+    line('reconciliation',t,i,'rows in '+i+', rows out '+o+', '+(i===o?'complete':'removed in full'));});
+  Object.keys(r.droppedTables).sort().forEach(function(t){
+    line('table removed',t,r.droppedRows[t]||0,r.droppedTables[t]);});
+  Object.keys(r.blanked).sort().forEach(function(k){
+    line('value emptied',k,r.blanked[k],
+      r.unknownFields[k]!==undefined?'not on the keep list':'identifying or internal field');});
+  Object.keys(r.coded).sort().forEach(function(k){
+    line('name replaced by code',k,r.coded[k],'identifying name');});
+  Object.keys(r.zeroed).sort().forEach(function(k){
+    line('cost set to zero',k,r.zeroed[k],'sharing level');});
+  Object.keys(r.scaled).sort().forEach(function(k){
+    line('cost scaled',k,r.scaled[k],res.costBasis);});
+  return out.join('\r\n');
+}
+
+$('go').onclick=function(){
+  var level=selLevel(), opts={level:level,
+    ref:new Date().toISOString().slice(0,10).replace(/-/g,'')+'-'
+        +Math.random().toString(36).slice(2,6).toUpperCase()};
+  if(level===3){
+    opts.costBasis=selBasis();
+    if(opts.costBasis==='secret'){
+      var s=parseFloat($('secret').value);
+      if(!(s>0)||s===1){ alert(s===1
+        ? 'A multiplier of 1 would leave your real cost values untouched. Choose a different number, '
+          +'or use the 1000-point option.'
+        : 'Enter a multiplier greater than zero, or choose the 1000-point option.');
+        return; }
+      opts.secretFactor=s;
+    }
+  }
+  /* scrub() is synchronous and can hold the thread for several seconds on a large batch. Show the
+     working state and let the browser paint it before starting, so nobody thinks it has hung. */
+  var btn=$('go'), label=btn.textContent;
+  btn.disabled=true; btn.textContent='Working through '+picked.length+' file'
+    +(picked.length===1?'':'s')+'\u2026';
+  setTimeout(function(){
+    try{ result=scrub(picked,opts); reviewed=false; render();
+         $('out').scrollIntoView({behavior:'smooth',block:'start'}); }
+    finally{ btn.disabled=false; btn.textContent=label; }
+  },40);
+};
+
+function render(){
+  var res=result, r=res.report, c=res.check;
+  var vClass = c.verdict==='PASSED'?'PASSED':c.verdict==='BLOCKED'?'BLOCKED':'REVIEW';
+  var vText  = c.verdict==='PASSED'?'Passed'
+             : c.verdict==='BLOCKED'?'Blocked'
+             : 'Review required';
+  var vNote  = c.verdict==='PASSED'
+      ? 'Every value the tool kept matches the shape it expects: a number, a date, a code or a '
+        +'setting. Nothing that looks like prose or a name survived. Read the file yourself below '
+        +'before you send it.'
+      : c.verdict==='BLOCKED'
+      ? 'Something identifying survived the scrub. Do not send this file. The items are listed below.'
+      : 'The output is structurally sound, but some values could not be confidently classified. '
+        +'Read the items below and decide for yourself.';
+
+  var h='';
+  h+='<div class="sheet"><div class="hd"><span class="step">03</span><h2>Read it before you send it</h2></div><div class="bd">';
+  h+='<div class="verdict '+vClass+'"><span class="v">'+vText+'</span><span class="n">'+esc(vNote)+'</span></div>';
+
+  h+='<table class="sum">';
+  h+='<tr><th>Batch reference</th><td style="font-family:var(--mono)">'+esc(res.ref)+'</td></tr>';
+  h+='<tr><th>Sharing level</th><td>'+res.plan.level+' — '+esc(res.plan.label)+'</td></tr>';
+  h+='<tr><th>Cost handling</th><td>'+esc(res.costNote)+'</td></tr>';
+  h+='<tr><th>Values examined</th><td>'+c.cellsChecked.toLocaleString()+'</td></tr>';
+  h+='</table>';
+  h+='<p><span class="pill">'+countAll(r.coded)+' names → codes</span>'
+   + '<span class="pill">'+countAll(r.blanked)+' values emptied</span>'
+   + '<span class="pill">'+countAll(r.droppedRows)+' rows removed</span>'
+   + '<span class="pill">'+Object.keys(r.droppedTables).length+' tables removed</span>'
+   + (countAll(r.zeroed)?'<span class="pill">'+countAll(r.zeroed)+' costs zeroed</span>':'')
+   + (countAll(r.scaled)?'<span class="pill">'+countAll(r.scaled)+' costs scaled</span>':'')+'</p>';
+
+  /* ---- the redaction ledger ---- */
+  h+='<span class="eyebrow" style="margin-top:18px">What was taken out — click any bar to reveal</span>';
+  h+='<button class="reveal" id="revealAll" type="button">Reveal all</button>';
+  h+='<div class="ledger"><table>';
+  var shown=0;
+  res.key.rows.forEach(function(row,i){
+    if(shown++>400) return;
+    h+='<tr><td class="n">'+(i+1)+'</td><td class="f mut">'+esc(row.prefix)+'</td>'
+     + '<td><button type="button" class="bar">'+esc(row.was)+'</button>'
+     + '<span class="arrow">&rarr;</span><span class="code">'+esc(row.now)+'</span></td></tr>';
+  });
+  if(!res.key.rows.length) h+='<tr><td class="mut">No name values were present to replace.</td></tr>';
+  if(res.key.rows.length>400) h+='<tr><td colspan="3" class="mut">… and '
+    +(res.key.rows.length-400)+' more. The full list is in the key file.</td></tr>';
+  h+='</table></div>';
+
+  /* ---- reconciliation: prove what came through, not just what went ---- */
+  h+='<span class="eyebrow" style="margin-top:18px">Reconciliation &mdash; rows in against rows out</span>';
+  h+='<div class="ledger"><table><tr><td class="f"><b>Table</b></td><td class="n"><b>In</b></td>'
+   + '<td class="n"><b>Out</b></td><td><b>Difference</b></td></tr>';
+  var recTables=Object.keys(r.rowsIn).sort(), totIn=0, totOut=0;
+  recTables.forEach(function(t){
+    var i=r.rowsIn[t]||0, o=r.rowsOut[t]||0; totIn+=i; totOut+=o;
+    var d=i-o, why = d===0 ? '<span style="color:var(--pass)">complete</span>'
+      : (r.droppedTables[t] ? esc(r.droppedTables[t]) : 'removed');
+    h+='<tr><td class="f">'+esc(t)+'</td><td class="n">'+i+'</td><td class="n">'+o+'</td>'
+     + '<td class="mut">'+(d===0?why:('&minus;'+d+' &mdash; '+why))+'</td></tr>';
+  });
+  h+='<tr><td class="f"><b>Total</b></td><td class="n"><b>'+totIn+'</b></td><td class="n"><b>'
+   + totOut+'</b></td><td class="mut">'+(totIn-totOut)+' rows removed by policy</td></tr>';
+  h+='</table></div>';
+  h+='<p class="mut">Every table you kept should read <b>complete</b>. A difference on a kept table '
+   + 'would mean rows went missing, and none should. Anything showing a difference is a table that '
+   + 'was removed in full, deliberately.</p>';
+
+  /* ---- what was removed wholesale ---- */
+  var dt=Object.keys(r.droppedTables).sort();
+  if(dt.length){
+    h+='<span class="eyebrow" style="margin-top:18px">Tables removed in full</span><div class="ledger"><table>';
+    dt.forEach(function(t){h+='<tr><td class="f"><b>'+esc(t)+'</b></td><td class="n">'
+      +(r.droppedRows[t]||0)+' rows</td><td class="mut">'+esc(r.droppedTables[t])+'</td></tr>';});
+    h+='</table></div>';
+  }
+  var uf=Object.keys(r.unknownFields);
+  if(uf.length||Object.keys(r.unknownTables).length){
+    h+='<div class="note"><b>Not recognised — emptied as a precaution.</b> These do not appear on the '
+     + 'keep list. They may come from a newer release of P6. The tool emptied them rather than pass '
+     + 'them through, which is how it is meant to behave.<div class="ledger" style="margin-top:8px">'
+     + '<table>';
+    Object.keys(r.unknownTables).sort().forEach(function(t){
+      h+='<tr><td class="f"><b>'+esc(t)+'</b></td><td class="mut">whole table removed</td></tr>';});
+    uf.sort().forEach(function(k){
+      h+='<tr><td class="f">'+esc(k)+'</td><td><button type="button" class="bar">'
+       + esc(r.unknownFields[k])+'</button></td></tr>';});
+    h+='</table></div></div>';
+  }
+  if(c.findings.length){
+    h+='<span class="eyebrow" style="margin-top:18px">Integrity check items</span><div class="ledger"><table>';
+    c.findings.forEach(function(x){
+      h+='<tr><td class="f" style="color:'+(x.sev==='BLOCK'?'var(--block)':'var(--review)')+'"><b>'
+       + x.sev+'</b></td><td>'+esc(x.what)+(x.sample?' <button type="button" class="bar">'+esc(x.sample)+'</button>':'')
+       + '</td></tr>';});
+    h+='</table></div>';
+  }
+
+  /* ---- the file itself ---- */
+  h+='<span class="eyebrow" style="margin-top:18px">The file you would be sending</span>';
+  res.files.forEach(function(f,i){
+    h+='<button class="btn" type="button" data-pre="'+i+'" style="margin:4px 6px 0 0">'
+     + 'Open '+esc(f.name)+'</button>';});
+  h+='<div id="preWrap"></div>';
+  h+='<p class="mut" style="margin-top:10px">Search it with Ctrl-F or Cmd-F for any name, rate or '
+   + 'reference you want to be certain has gone.</p>';
+
+  h+='<div class="note"><b>What stays in, by design.</b> Real dates, durations, working calendars, '
+   + 'float and the shape of the network are all retained — the schedule would be useless without '
+   + 'them. A large or distinctive project can sometimes be recognised from those alone, without a '
+   + 'single name surviving. Decide whether that matters for what you are sending.</div>';
+
+  /* ---- the gate ---- */
+  h+='<div class="gate" id="gate"><label><input type="checkbox" id="ack"><span>'
+   + '<b>I have opened and read the output above.</b> I understand this tool removes what is on its '
+   + 'list, that it gives no warranty of completeness, and that releasing this file is my decision.'
+   + '</span></label></div>';
+  h+='</div></div>';
+
+  h+='<div class="sheet" id="rel"><div class="hd"><span class="step">04</span><h2>Release the files</h2></div>'
+   + '<div class="bd"><p class="mut" style="margin-top:0">Downloads unlock once you have confirmed '
+   + 'the review above.</p><div id="dls"></div></div></div>';
+
+  $('out').innerHTML=h;
+
+  /* reveal behaviour */
+  Array.prototype.forEach.call($('out').querySelectorAll('.bar'),function(b){
+    b.onclick=function(){b.classList.toggle('show');};});
+  var ra=$('revealAll');
+  if(ra) ra.onclick=function(){
+    var bars=$('out').querySelectorAll('.bar'), any=false;
+    Array.prototype.forEach.call(bars,function(b){if(!b.classList.contains('show'))any=true;});
+    Array.prototype.forEach.call(bars,function(b){b.classList.toggle('show',any);});
+    ra.textContent = any?'Hide all':'Reveal all';
+  };
+  Array.prototype.forEach.call($('out').querySelectorAll('[data-pre]'),function(b){
+    b.onclick=function(){
+      var i=+b.getAttribute('data-pre');
+      var w=$('preWrap');
+      if(w.getAttribute('data-open')===String(i)){w.innerHTML='';w.removeAttribute('data-open');return;}
+      w.setAttribute('data-open',String(i));
+      w.innerHTML='<div class="pre">'+esc(result.files[i].text)+'</div>';
+    };});
+  $('ack').onchange=function(){ reviewed=$('ack').checked;
+    $('gate').classList.toggle('done',reviewed); renderDownloads(); };
+  renderDownloads();
+}
+
+function renderDownloads(){
+  var res=result, box=$('dls');
+  releaseUrls();
+  if(!reviewed){ box.innerHTML='<p class="mut">Tick the confirmation above to unlock the downloads.</p>';
+    return; }
+  if(res.check.verdict==='BLOCKED'){
+    box.innerHTML='<div class="warn"><b>Blocked.</b> The integrity check found identifying data still '
+      +'present in the output. Downloads stay locked. Please report this to '
+      +'<a href="mailto:'+SUPPORT_EMAIL+'?subject=Holdpoint%20BLOCKED%20'+encodeURIComponent(res.ref)
+      +'">'+SUPPORT_EMAIL+'</a>, quoting batch reference <b>'+esc(res.ref)+'</b>, so the keep list '
+      +'can be corrected. Do not attempt to work around it.</div>';
+    return;
+  }
+  var cert=buildCertificate(res,true);
+  var h='';
+  res.files.forEach(function(f){
+    h+='<a class="dl" download="'+esc(f.name)+'" href="'+blobUrl(f.text,'application/octet-stream')+'">'
+     + '&#8681; '+esc(f.name)+'</a>';});
+  h+='<a class="dl alt" download="XER_HOLDPOINT_CERTIFICATE_'+esc(res.ref)+'.txt" href="'
+   + blobUrl(cert,'text/plain')+'">&#8681; Audit certificate</a>';
+  h+='<a class="dl alt" download="REMOVAL_LOG_'+esc(res.ref)+'.csv" href="'
+   + blobUrl(buildRemovalCsv(res),'text/csv')+'">&#8681; Removal log (CSV)</a>';
+  h+='<button class="dl alt" id="printBtn" type="button" style="border:0;cursor:pointer;font:600 13.5px/1 '
+   + 'var(--sans)">&#128424;&nbsp; Print certificate</button>';
+  h+='<div style="margin-top:16px;border-top:1px solid var(--rule2);padding-top:14px">'
+   + '<b>What to tell the person receiving it</b>'
+   + '<p class="mut" style="margin:5px 0 9px">They have probably never heard of this tool. They will '
+   + 'open a file full of codes with no explanation. This is the note to send with it &mdash; already '
+   + 'written for the level you chose, with your batch reference filled in.</p>'
+   + '<button class="btn" type="button" id="cnBtn">Write the covering note</button>'
+   + '<div id="cnOut"></div></div>';
+  h+='<div class="note" style="margin-top:14px"><b>File fingerprints.</b> The certificate records a '
+   + 'SHA-256 for every file in and out, so both sides can prove nothing changed in transit.'
+   + '<div class="ledger" style="margin-top:8px"><table>';
+  res.files.forEach(function(f){
+    h+='<tr><td class="f mut">out</td><td style="word-break:break-all">'+esc(f.name)+'<br>'
+     + '<span class="code">'+f.outHash+'</span></td></tr>';});
+  h+='</table></div></div>';
+
+  h+='<div class="warn" style="margin-top:16px"><b>The key file — handle separately.</b> This maps '
+   + 'every code back to the real name. You need it to read any analysis that comes back to you. '
+   + 'It is the one file that must never travel with the scrubbed schedule, and never in the same '
+   + 'email.<div style="margin-top:10px">';
+  if(CRYPTO_OK){
+    h+='<span class="eyebrow">Passphrase for the key file</span>'
+     + '<input id="pw" type="text" placeholder="choose a passphrase" style="max-width:320px">'
+     + '<div style="margin-top:9px"><button class="btn" id="encBtn" type="button">'
+     + 'Encrypt and download the key</button> '
+     + '<button class="btn" id="plainBtn" type="button">Download it unencrypted</button></div>'
+     + '<p class="mut" style="margin-top:8px">Encryption is AES-GCM 256 with the key derived from '
+     + 'your passphrase (PBKDF2-SHA256, 600,000 iterations). Send the passphrase by phone or text, '
+     + 'never in the same message as the file.</p><div id="encOut"></div>';
+  } else {
+    h+='<p class="mut">Encryption is unavailable in this browser context, so the key can only be '
+     + 'saved unencrypted. Store it somewhere safe.</p>'
+     + '<button class="btn" id="plainBtn" type="button">Download the key</button>';
+  }
+  h+='</div></div>';
+  box.innerHTML=h;
+
+  var cnb=$('cnBtn');
+  if(cnb) cnb.onclick=renderCoveringNote;
+  var prb=$('printBtn');
+  if(prb) prb.onclick=openPrintView;
+  var pb=$('plainBtn');
+  if(pb) pb.onclick=function(){
+    var a=document.createElement('a');
+    a.href=blobUrl(buildKeyCsv(res),'text/csv');
+    a.download='KEY_'+res.ref+'_KEEP_PRIVATE.csv'; a.click();
+  };
+  var eb=$('encBtn');
+  if(eb) eb.onclick=function(){
+    var pw=$('pw').value;
+    if(pw.length<8){ $('encOut').innerHTML='<p class="mut">Use at least 8 characters.</p>'; return; }
+    $('encOut').innerHTML='<p class="mut">Encrypting…</p>';
+    encryptKeyFile(buildKeyCsv(res),pw).then(function(json){
+      $('encOut').innerHTML='<a class="dl key" download="KEY_'+esc(res.ref)+'_ENCRYPTED.json" href="'
+        +blobUrl(json,'application/json')+'">&#8681; Encrypted key file</a>';
+    }).catch(function(){
+      $('encOut').innerHTML='<p class="mut">Encryption failed in this browser. Use the unencrypted '
+        +'option and store the file securely.</p>';
+    });
+  };
+}
+
+/* ==========================================================================================
+ * SELF-TEST
+ * Runs the engine against a built-in fixture and checks the results against known-good answers.
+ * The point is that a buyer, an auditor or an IT department can satisfy themselves that the copy
+ * of Holdpoint on their own machine behaves correctly — without taking anybody's word for it, and
+ * without exposing a real programme to do it.
+ * ========================================================================================== */
+function selfTest(){
+  var T='\u0009', NL='\r\n', R=[];
+  function chk(name, pass, detail){ R.push({name:name, pass:!!pass, detail:detail||''}); }
+  function safe(name, fn){
+    try{ fn(); }
+    catch(e){ R.push({name:name, pass:false, detail:'threw: '+e.message}); }
+  }
+
+  var FIX=[
+    'ERMHDR'+T+'7.0'+T+'2026-01-15'+T+'Project'+T+'jbloggs'+T+'Jane Bloggs'+T+'ACME_DB'+T+'Project Management'+T+'GBP',
+    '%T'+T+'PROJECT','%F'+T+'proj_id'+T+'proj_short_name'+T+'plan_start_date'+T+'proj_url'+T+'add_by_name',
+    '%R'+T+'99'+T+'RIVERSIDE'+T+'2026-02-02 08:00'+T+'http://acme.example/riverside'+T+'admin',
+    '%T'+T+'TASK','%F'+T+'task_id'+T+'task_code'+T+'task_name'+T+'target_drtn_hr_cnt'+T+'total_float_hr_cnt'+T+'early_start_date'+T+'create_user'+T+'secret_new_field',
+    '%R'+T+'1'+T+'A100'+T+'Piling to grid B4'+T+'80'+T+'16'+T+'2026-02-02 08:00'+T+'jbloggs'+T+'Acme Construction Ltd'+T+'SURPLUS UNDECLARED VALUE',
+    '%R'+T+'2'+T+'A110'+T+'Pour ground slab'+T+'120'+T+'0'+T+'2026-02-12 08:00'+T+'jbloggs'+T+'Acme Construction Ltd',
+    '%T'+T+'TASKPRED','%F'+T+'task_pred_id'+T+'task_id'+T+'pred_task_id'+T+'pred_type'+T+'lag_hr_cnt',
+    '%R'+T+'1'+T+'2'+T+'1'+T+'PR_FS'+T+'0',
+    '%T'+T+'TASKRSRC','%F'+T+'taskrsrc_id'+T+'task_id'+T+'target_qty'+T+'target_cost',
+    '%R'+T+'1'+T+'1'+T+'160'+T+'40000',
+    '%R'+T+'2'+T+'2'+T+'240'+T+'10000',
+    '%T'+T+'SECRETTABLE2029','%F'+T+'id'+T+'client_name',
+    '%R'+T+'1'+T+'Acme Holdings PLC',
+    '%E'].join(NL);
+  var files=[{name:'selftest.xer', text:FIX}];
+
+  safe('Fingerprinting is correct', function(){
+    chk('SHA-256 matches the published test vector for "abc"',
+      sha256Text('abc')==='ba7816bf8f01cfea414140de5dae2223b00361a396177a9cb410ff61f20015ad');
+  });
+
+  safe('Level 2 behaviour', function(){
+    var r=scrub(files,{level:2,ref:'SELFTEST'});
+    var t=r.files[0].text;
+    chk('Activity names are replaced with codes',
+      t.indexOf('Piling to grid B4')<0 && t.indexOf('Pour ground slab')<0 && t.indexOf('Activity 00001')>=0);
+    chk('The project name is replaced with a code',
+      t.indexOf('RIVERSIDE')<0 && t.indexOf('PROJ-001')>=0);
+    chk('The project URL is removed', t.indexOf('acme.example')<0);
+    chk('Usernames are removed', t.indexOf('jbloggs')<0 && t.indexOf('Jane Bloggs')<0);
+    chk('The database name is removed from the header', t.indexOf('ACME_DB')<0);
+    chk('A field the tool has never seen is emptied',
+      t.indexOf('Acme Construction Ltd')<0,
+      'fixture carries a made-up field "secret_new_field"');
+    chk('A surplus column beyond the header is emptied',
+      t.indexOf('SURPLUS UNDECLARED VALUE')<0);
+    chk('A table the tool has never seen is removed',
+      t.indexOf('SECRETTABLE2029')<0 && t.indexOf('Acme Holdings PLC')<0);
+    chk('Durations, float and dates survive byte for byte',
+      t.indexOf('80'+T+'16'+T+'2026-02-02 08:00')>=0);
+    chk('Logic links survive', t.indexOf('PR_FS')>=0);
+    chk('Quantities are kept at this level', t.indexOf(T+'160'+T)>=0);
+    chk('Every cost is zeroed at this level',
+      t.indexOf('40000')<0 && t.indexOf('10000')<0);
+    chk('The unrecognised field is reported, not hidden',
+      !!r.report.unknownFields['TASK.secret_new_field']);
+    chk('The unrecognised table is reported, not hidden',
+      !!r.report.unknownTables.SECRETTABLE2029);
+    chk('Rows in and rows out reconcile for every kept table',
+      Object.keys(r.report.rowsIn).every(function(k){
+        return !POLICY[k] || (r.report.rowsIn[k]===r.report.rowsOut[k]); }));
+    chk('The integrity check passes on clean output', r.check.verdict==='PASSED', r.check.verdict);
+  });
+
+  safe('Level 1 behaviour', function(){
+    var r=scrub(files,{level:1,ref:'SELFTEST'});
+    chk('Level 1 removes the whole resource layer',
+      r.files[0].text.indexOf('TASKRSRC')<0);
+  });
+
+  safe('Cost handling', function(){
+    var r3=scrub(files,{level:3,ref:'SELFTEST'});
+    var out=r3.files[0].text.split(NL).filter(function(l){return l.indexOf('%R')===0;})
+      .map(function(l){return l.split(T);}).filter(function(p){return p.length===5;});
+    var a=Number(out[0][4]), b=Number(out[1][4]);
+    chk('Normalising preserves the ratio between costs',
+      Math.abs((a/(a+b)) - (40000/50000)) < 1e-9,
+      '40000:10000 in, '+a+':'+b+' out');
+    chk('Normalised costs total 1000 points', Math.abs((a+b)-1000)<0.001, (a+b).toFixed(4));
+
+    var noMoney=[{name:'n.xer',text:['ERMHDR'+T+'7.0','%T'+T+'TASK',
+      '%F'+T+'task_id'+T+'task_name','%R'+T+'1'+T+'Piling','%E'].join(NL)}];
+    chk('With nothing to normalise against, costs are zeroed rather than passed through',
+      scrub(noMoney,{level:3,ref:'S'}).costBasis==='zeroed-fallback');
+    chk('A multiplier of 1 is refused',
+      scrub(files,{level:3,ref:'S',costBasis:'secret',secretFactor:1}).costBasis==='zeroed-refused');
+    chk('A real multiplier is accepted',
+      scrub(files,{level:3,ref:'S',costBasis:'secret',secretFactor:0.137}).costBasis==='secret-scaled');
+  });
+
+  safe('The integrity check can fail', function(){
+    var r=scrub(files,{level:2,ref:'SELFTEST'});
+    var tampered=[{name:'t.xer',
+      text:r.files[0].text.replace(T+'Activity 00001'+T, T+'Piling to grid B4'+T)}];
+    var v=verify(tampered, r.plan, false);
+    chk('Re-inserting a real name is caught and blocked', v.verdict==='BLOCKED', v.verdict);
+  });
+
+  safe('The key decodes the output', function(){
+    var r=scrub(files,{level:2,ref:'SELFTEST'});
+    var back={}; r.key.rows.forEach(function(x){back[x.now]=x.was;});
+    chk('The key maps every code back to its original name',
+      back['Activity 00001']==='Piling to grid B4' && back['PROJ-001']==='RIVERSIDE');
+  });
+
+  safe('Determinism', function(){
+    var a=scrub(files,{level:2,ref:'X'}).files[0].text;
+    var b=scrub(files,{level:2,ref:'X'}).files[0].text;
+    chk('The same input always produces the same output', a===b);
+  });
+
+  return R;
+}
+
+function renderSelfTest(){
+  var box=document.getElementById('stOut');
+  box.innerHTML='<p class="mut">Running…</p>';
+  setTimeout(function(){
+    var R, err=null;
+    try{ R=selfTest(); }catch(e){ err=e.message; }
+    if(err){ box.innerHTML='<div class="callout stop"><b>The self-test could not run.</b> '
+      +esc(err)+' Do not rely on this copy — download a fresh one.</div>'; return; }
+    var passed=R.filter(function(x){return x.pass;}).length, total=R.length;
+    var allOk = passed===total;
+    var h='<div class="callout '+(allOk?'':'stop')+'" style="border-left-color:'
+      +(allOk?'var(--pass)':'var(--block)')+'"><b>'
+      +(allOk ? passed+' of '+total+' checks passed. This copy is behaving correctly.'
+              : (total-passed)+' of '+total+' checks FAILED. Do not use this copy — download a fresh '
+                +'one, and report this to '+SUPPORT_EMAIL+'.')
+      +'</b><div class="mut" style="margin-top:4px">Run against a built-in fixture. No file of yours '
+      +'was involved, and nothing left this page.</div></div>';
+    h+='<div class="ledger" style="max-height:none"><table>';
+    R.forEach(function(x){
+      h+='<tr><td class="f" style="color:'+(x.pass?'var(--pass)':'var(--block)')+'"><b>'
+       + (x.pass?'pass':'FAIL')+'</b></td><td>'+esc(x.name)
+       + (x.detail?' <span class="mut">'+esc(x.detail)+'</span>':'')+'</td></tr>';
+    });
+    h+='</table></div>';
+    box.innerHTML=h;
+  },30);
+}
+
+/* ==========================================================================================
+ * DECODE
+ * The return journey. An expert replies "ACT-00147 is driving the critical path"; this turns
+ * that back into "Piling to grid B4". Everything happens here — the key never leaves the page,
+ * and the tool only reads a file the user already holds.
+ * ========================================================================================== */
+var decodeMap=null, decodeCount=0;
+
+function parseKeyCsv(text){
+  var map={}, n=0, lines=text.split(/\r?\n/);
+  for(var i=0;i<lines.length;i++){
+    var l=lines[i];
+    if(!l||/^type\s*,/i.test(l)) continue;
+    var cells=[], cur='', q=false;
+    for(var c=0;c<l.length;c++){
+      var ch=l[c];
+      if(q){ if(ch==='"'){ if(l[c+1]==='"'){cur+='"';c++;} else q=false; } else cur+=ch; }
+      else if(ch==='"') q=true;
+      else if(ch===','){ cells.push(cur); cur=''; }
+      else cur+=ch;
+    }
+    cells.push(cur);
+    if(cells.length<3) continue;
+    var code=cells[1], was=cells[2];
+    if(was.charAt(0)==="'") was=was.slice(1);   // undo the spreadsheet-safety prefix
+    if(code&&was){ map[code]=was; n++; }
+  }
+  return {map:map, n:n};
+}
+
+function decryptKeyFile(json, passphrase){
+  var o;
+  try{ o=JSON.parse(json); }catch(e){ return Promise.reject(new Error('That is not a key file.')); }
+  if(o.format!=='holdpoint-key-v1') return Promise.reject(new Error('That is not a Holdpoint key file.'));
+  if(!CRYPTO_OK) return Promise.reject(new Error('This browser cannot decrypt in this context.'));
+  function b(s){ var raw=atob(s), u=new Uint8Array(raw.length);
+    for(var i=0;i<raw.length;i++) u[i]=raw.charCodeAt(i); return u; }
+  var enc=new TextEncoder();
+  return crypto.subtle.importKey('raw',enc.encode(passphrase),'PBKDF2',false,['deriveKey'])
+    .then(function(base){
+      return crypto.subtle.deriveKey({name:'PBKDF2',salt:b(o.salt),
+        iterations:o.iterations||600000,hash:'SHA-256'},
+        base,{name:'AES-GCM',length:256},false,['decrypt']);
+    })
+    .then(function(k){ return crypto.subtle.decrypt({name:'AES-GCM',iv:b(o.iv)},k,b(o.data)); })
+    .then(function(buf){ return new TextDecoder().decode(buf); })
+    .catch(function(){ throw new Error('Wrong passphrase, or the file has been altered.'); });
+}
+
+function loadKeyText(text){
+  var res=parseKeyCsv(text);
+  if(!res.n) throw new Error('No code mappings found in that file.');
+  decodeMap=res.map; decodeCount=res.n;
+  $('dkState').innerHTML='<div class="note"><b>Key loaded.</b> '+res.n.toLocaleString()
+    +' code'+(res.n===1?'':'s')+' available. It stays on this page and is discarded when you '
+    +'close or reset.</div>';
+  $('dcRun').disabled=false;
+}
+
+function runDecode(){
+  var src=$('dcIn').value;
+  if(!decodeMap){ $('dcOut').innerHTML='<div class="warn">Load your key file first.</div>'; return; }
+  if(!src.trim()){ $('dcOut').innerHTML='<div class="warn">Paste the text you want decoded.</div>'; return; }
+  /* Longest codes first, so "Activity 00010" is never half-matched by "Activity 0001". */
+  var codes=Object.keys(decodeMap).sort(function(a,b){return b.length-a.length;});
+  var hits=0, seen={};
+  var out=src;
+  codes.forEach(function(code){
+    var rx=new RegExp(code.replace(/[.*+?^${}()|[\]\\]/g,'\\$&'),'g');
+    out=out.replace(rx,function(){ hits++; seen[code]=(seen[code]||0)+1;
+      return decodeMap[code]; });
+  });
+  var found=Object.keys(seen).length;
+  var h='';
+  h+= hits
+    ? '<div class="note" style="border-left-color:var(--pass)"><b>'+hits+' reference'
+      +(hits===1?'':'s')+' decoded</b> from '+found+' distinct code'+(found===1?'':'s')+'.</div>'
+    : '<div class="warn"><b>Nothing matched.</b> Check this is the key for the same batch — the '
+      +'reference on the key filename should match the one on the file you sent.</div>';
+  h+='<span class="eyebrow" style="margin-top:12px">Decoded text</span>';
+  h+='<div class="pre" style="max-height:280px;white-space:pre-wrap">'+esc(out)+'</div>';
+  h+='<button class="btn" type="button" id="dcCopy" style="margin-top:8px">Copy the decoded text</button>';
+  if(found){
+    h+='<span class="eyebrow" style="margin-top:16px">What was matched</span><div class="ledger"><table>';
+    Object.keys(seen).sort(function(a,b){return seen[b]-seen[a];}).slice(0,60).forEach(function(c){
+      h+='<tr><td class="f"><span class="code">'+esc(c)+'</span></td><td class="arrow">&rarr;</td>'
+       + '<td>'+esc(decodeMap[c])+'</td><td class="n mut">&times;'+seen[c]+'</td></tr>';});
+    h+='</table></div>';
+  }
+  $('dcOut').innerHTML=h;
+  var cb=$('dcCopy');
+  if(cb) cb.onclick=function(){
+    var ta=document.createElement('textarea');
+    ta.value=out; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    try{ document.execCommand('copy'); cb.textContent='Copied'; }
+    catch(e){ cb.textContent='Select the text above and copy it'; }
+    document.body.removeChild(ta);
+    setTimeout(function(){cb.textContent='Copy the decoded text';},2200);
+  };
+}
+
+function openDecode(){
+  document.getElementById('decode').classList.add('on');
+  document.getElementById('dcClose').focus();
+}
+function closeDecode(){
+  document.getElementById('decode').classList.remove('on');
+  var b=document.getElementById('decodeOpen'); if(b) b.focus();
+}
+function resetDecode(){
+  decodeMap=null; decodeCount=0;
+  if($('dkState')) $('dkState').innerHTML='';
+  if($('dcIn')) $('dcIn').value='';
+  if($('dcOut')) $('dcOut').innerHTML='';
+  if($('dcRun')) $('dcRun').disabled=true;
+  if($('dkPw')) $('dkPw').value='';
+}
+
+/* ==========================================================================================
+ * COVERING NOTE
+ * The recipient has probably never heard of this tool. They open an email containing a file full
+ * of codes and no explanation. This writes the note that goes with it — tailored to the level
+ * actually used, with the batch reference and file names already filled in.
+ * ========================================================================================== */
+function buildCoveringNote(res){
+  var L=res.plan.level, files=res.files.map(function(f){return f.name;}).join(', ');
+  var can=[], cannot=[];
+
+  can.push('Import it into P6 exactly as you would any other XER. Use an empty project rather than '
+    +'merging it into an existing one.');
+  can.push('Schedule it. Every date, duration, lag, constraint, calendar and float value is '
+    +'unchanged from the original, so it calculates identically.');
+  can.push('Analyse it — critical path, longest path, logic quality, DCMA-style health checks, '
+    +'delay analysis, and comparison against other revisions in the same batch.');
+
+  cannot.push('Read the real names. The project, WBS, activities, calendars and any resources '
+    +'appear as codes such as ACT-00147 and WBS element 0003.');
+  cannot.push('See notebook topics, activity codes, user-defined fields, document references, '
+    +'expenses, risks or issues. Those are removed in full, not hidden.');
+
+  if(L===1) cannot.push('See resources, roles, cost accounts or any cost. None of that is in the file.');
+  else if(L===2){
+    can.push('See resource and role demand, quantities, and where the job is over-allocated.');
+    cannot.push('See any cost. Every cost value is zero.');
+  } else if(L===3){
+    can.push('See the shape of the spend — how cost is split between categories and how the '
+      +'cashflow curve runs.');
+    cannot.push('See any real money. Costs have been scaled by a single factor, so proportions are '
+      +'real but the figures are not currency.');
+  } else {
+    can.push('See real cost values and the contract currency.');
+  }
+
+  var lines=[];
+  lines.push('The attached programme has been through XER Holdpoint before sending. It is a normal');
+  lines.push('Primavera P6 XER file — the identifying text has been replaced with codes, and the');
+  lines.push('scheduling data is untouched.');
+  lines.push('');
+  lines.push('Reference: '+res.ref);
+  lines.push('File'+(res.files.length===1?'':'s')+': '+files);
+  lines.push('Sharing level: '+L+' — '+res.plan.label);
+  lines.push('');
+  lines.push('WHAT YOU CAN DO WITH IT');
+  can.forEach(function(t,i){ lines.push('  '+(i+1)+'. '+t); });
+  lines.push('');
+  lines.push('WHAT YOU CANNOT DO');
+  cannot.forEach(function(t){ lines.push('  - '+t); });
+  lines.push('');
+  lines.push('WHEN YOU REPORT BACK');
+  lines.push('  Quote the codes exactly as they appear — for example "ACT-00147 is driving the');
+  lines.push('  critical path". I hold the key that turns those back into real activity names, so');
+  lines.push('  a report written in codes is perfectly readable at my end.');
+  lines.push('');
+  lines.push('  Please do not ask for the key. It is the one file that undoes the whole exercise,');
+  lines.push('  and there is no need for you to have it.');
+  lines.push('');
+  lines.push('IF SOMETHING LOOKS WRONG');
+  lines.push('  A certificate accompanies this file listing exactly what was removed, with a');
+  lines.push('  SHA-256 fingerprint so we can both confirm the file arrived as it left. If the');
+  lines.push('  import fails or an activity count looks off, quote the reference above and I will');
+  lines.push('  check it against my copy.');
+  return lines.join('\n');
+}
+
+function renderCoveringNote(){
+  var box=document.getElementById('cnOut');
+  var note=buildCoveringNote(result);
+  box.innerHTML='<div class="pre" style="max-height:340px;white-space:pre-wrap">'+esc(note)+'</div>'
+    +'<button class="btn" type="button" id="cnCopy" style="margin-top:8px">Copy the note</button>'
+    +'<span class="mut" style="margin-left:10px">Paste it into your email, above the attachments.</span>';
+  document.getElementById('cnCopy').onclick=function(){
+    var ta=document.createElement('textarea');
+    ta.value=note; ta.style.position='fixed'; ta.style.opacity='0';
+    document.body.appendChild(ta); ta.select();
+    var b=document.getElementById('cnCopy');
+    try{ document.execCommand('copy'); b.textContent='Copied'; }
+    catch(e){ b.textContent='Select the text above and copy it'; }
+    document.body.removeChild(ta);
+    setTimeout(function(){ b.textContent='Copy the note'; },2200);
+  };
+}
+
+/* ==========================================================================================
+ * PRINTABLE RELEASE CERTIFICATE
+ * The .txt certificate is for machines and for filing. This is the one a person hands to
+ * document control, staples to a transmittal, or puts in front of a client. Same content,
+ * same numbers, rendered as a document with the mark on it.
+ * ========================================================================================== */
+function markHTML(size){
+  var m=document.querySelector('svg.mark');
+  if(!m) return '';
+  return '<svg width="'+size+'" height="'+size+'" viewBox="0 0 64 64" aria-hidden="true">'
+       + m.innerHTML.replace(/id="hpSteel"/g,'id="pSteel"').replace(/url\(#hpSteel\)/g,'url(#pSteel)')
+                    .replace(/id="hpArm"/g,'id="pArm"').replace(/url\(#hpArm\)/g,'url(#pArm)')
+       + '</svg>';
+}
+function certRow(k,v){ return '<tr><th>'+esc(k)+'</th><td>'+v+'</td></tr>'; }
+
+function buildCertHTML(res){
+  var r=res.report, c=res.check, h='';
+
+  h+='<div class="phead">'+markHTML(52)+'<div>'
+   + '<div class="pname"><i>XER</i> <b>HOLD</b>POINT</div>'
+   + '<div class="psub">Release certificate</div></div>'
+   + '<div class="pref"><div class="l">Batch reference</div><div class="v">'+esc(res.ref)+'</div></div>'
+   + '</div>';
+
+  h+='<table class="pt"><tbody>'
+   + certRow('Prepared', new Date().toLocaleString())
+   + certRow('Tool version', 'XER Holdpoint '+APP_REV)
+   + certRow('Sharing level', res.plan.level+' &mdash; '+esc(res.plan.label))
+   + certRow('Cost handling', esc(res.costNote))
+   + certRow('Integrity check', '<b class="v-'+c.verdict+'">'+
+       (c.verdict==='PASSED'?'Passed':c.verdict==='BLOCKED'?'Blocked':'Review required')+'</b>'
+       + ' &mdash; '+c.cellsChecked.toLocaleString()+' values examined, '
+       + c.blocks.length+' blocking, '+c.reviews.length+' for review')
+   + certRow('Review', 'The output was opened and the review confirmed before release')
+   + '</tbody></table>';
+
+  h+='<h4>Files and fingerprints</h4><table class="pt pg"><thead><tr><th>Source</th><th>Output</th>'
+   + '</tr></thead><tbody>';
+  res.files.forEach(function(f){
+    h+='<tr><td>'+esc(f.from)+'<div class="hash">'+f.inHash+'</div></td>'
+     + '<td>'+esc(f.name)+'<div class="hash">'+f.outHash+'</div></td></tr>';
+  });
+  h+='</tbody></table>';
+
+  h+='<h4>Reconciliation &mdash; rows in against rows out</h4>'
+   + '<table class="pt pg"><thead><tr><th>Table</th><th class="n">In</th><th class="n">Out</th>'
+   + '<th>Status</th></tr></thead><tbody>';
+  var tIn=0,tOut=0;
+  Object.keys(r.rowsIn).sort().forEach(function(t){
+    var i=r.rowsIn[t]||0,o=r.rowsOut[t]||0; tIn+=i; tOut+=o;
+    h+='<tr><td>'+esc(t)+'</td><td class="n">'+i+'</td><td class="n">'+o+'</td><td>'
+     + (i===o?'<b class="v-PASSED">complete</b>':'removed in full &mdash; '+esc(r.droppedTables[t]||''))
+     + '</td></tr>';
+  });
+  h+='<tr class="tot"><td><b>Total</b></td><td class="n"><b>'+tIn+'</b></td><td class="n"><b>'
+   + tOut+'</b></td><td>'+(tIn-tOut)+' rows removed by policy</td></tr></tbody></table>';
+
+  h+='<h4>What was done</h4><table class="pt pg"><tbody>'
+   + certRow('Header fields cleared', r.headerCleared)
+   + certRow('Name values replaced with codes', countAll(r.coded))
+   + certRow('Values emptied', countAll(r.blanked))
+   + certRow('Cost values set to zero', countAll(r.zeroed))
+   + certRow('Cost values scaled', countAll(r.scaled))
+   + (countAll(r.roundedAway)?certRow('Cost values lost to rounding',
+       countAll(r.roundedAway)+' (non-zero costs that became zero once scaled)'):'')
+   + certRow('Rows removed', countAll(r.droppedRows))
+   + certRow('Values retained by policy', countAll(r.kept))
+   + '</tbody></table>';
+
+  var uf=Object.keys(r.unknownFields), ut=Object.keys(r.unknownTables);
+  if(uf.length||ut.length){
+    h+='<h4>Not recognised &mdash; emptied as a precaution</h4>'
+     + '<p class="pm">These are not on the keep list. They may come from a newer release of P6. '
+     + 'They were emptied rather than passed through.</p><ul class="pl">';
+    ut.sort().forEach(function(t){h+='<li>'+esc(t)+' (whole table removed)</li>';});
+    uf.sort().forEach(function(k){h+='<li>'+esc(k)+'</li>';});
+    h+='</ul>';
+  }
+  if(c.findings.length){
+    h+='<h4>Integrity check items</h4><ul class="pl">';
+    c.findings.forEach(function(x){
+      h+='<li><b>'+x.sev+'</b> &mdash; '+esc(x.what)+(x.sample?' <span class="pm">('+esc(x.sample)+')</span>':'')+'</li>';});
+    h+='</ul>';
+  }
+
+  h+='<div class="pfoot"><b>What this certificate does not say.</b> It records what the tool '
+   + 'removed. It is not a warranty that the output contains nothing sensitive. Real dates, '
+   + 'durations, working calendars and network shape are retained by design, and a distinctive '
+   + 'project can sometimes be recognised from those alone. The person releasing the file is '
+   + 'responsible for checking it.'
+   + '<div class="pm" style="margin-top:8px">XER Holdpoint '+APP_REV+' &middot; '
+   + 'not affiliated with, endorsed by or sponsored by Oracle. Oracle, Primavera and P6 are '
+   + 'trademarks of Oracle Corporation. &middot; Support: '+SUPPORT_EMAIL+'</div></div>';
+  return h;
+}
+
+function openPrintView(){
+  document.getElementById('printBody').innerHTML=buildCertHTML(result);
+  document.getElementById('printView').classList.add('on');
+  document.getElementById('printClose').focus();
+}
+function closePrintView(){
+  document.getElementById('printView').classList.remove('on');
+  var b=document.getElementById('printBtn'); if(b) b.focus();
+}
+
+/* ==========================================================================================
+ * HELP & REFERENCE
+ * Appendix A is generated from the live POLICY object rather than written by hand, so the
+ * documentation cannot drift away from what the code actually does.
+ * ========================================================================================== */
+var HELP_TREAT = {
+  S:  ['Kept exactly as it is',        'structural — the schedule needs it'],
+  FS: ['Kept exactly as it is',        'a P6 display or option setting'],
+  M:  ['Follows your sharing level',   'a money value'],
+  B:  ['Always emptied',               'identifying, internal, or a database key'],
+  CAL:['Kept, and content-checked',    'calendar working pattern; checked for stray text'],
+  CUR:['Emptied below level 4',        'names the currency, so it hints at the region']
+};
+function helpTreat(cls){
+  if(cls && cls.indexOf('C:')===0){
+    var st=CODE_STYLE[cls.slice(2)]||{t:cls.slice(2)+'-'};
+    return ['Replaced with a code','becomes '+st.t+'0001, '+st.t+'0002 …'];
+  }
+  return HELP_TREAT[cls]||['Emptied','not recognised'];
+}
+function buildReference(){
+  var h='<input class="filter" id="refFilter" type="text" placeholder="Filter by table or field name…">';
+  h+='<div id="refBody">';
+  Object.keys(POLICY).forEach(function(t){
+    var pol=POLICY[t];
+    h+='<h4 data-t="'+t+'">'+t+' <span class="mut" style="font-weight:400">— '+pol.note
+      +' · included from level '+pol.L+'</span></h4>';
+    h+='<table><thead><tr><th style="width:34%">Field</th><th style="width:30%">What happens to it</th>'
+      +'<th>Why</th></tr></thead><tbody>';
+    Object.keys(pol.f).sort().forEach(function(f){
+      var tr=helpTreat(pol.f[f]);
+      h+='<tr data-f="'+t.toLowerCase()+' '+f.toLowerCase()+'"><td><code>'+f+'</code></td><td>'+tr[0]
+        +'</td><td class="mut">'+tr[1]+'</td></tr>';
+    });
+    h+='</tbody></table>';
+  });
+  h+='<h4>Tables removed in full</h4><p class="mut">These never reach the output at any level. '
+    +'Any table not listed here <em>and</em> not listed above is also removed — that is the default.</p>';
+  h+='<table><thead><tr><th style="width:34%">Table</th><th>Why it is removed</th></tr></thead><tbody>';
+  Object.keys(KNOWN_DROPS).sort().forEach(function(t){
+    h+='<tr data-f="'+t.toLowerCase()+'"><td><code>'+t+'</code></td><td class="mut">'
+      +KNOWN_DROPS[t]+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  return h;
+}
+
+var HELP_SECTIONS=[
+ {id:'contents',nav:'Contents',head:false},
+ {id:'g',nav:'Getting started',head:true},
+ {id:'what-is',nav:'What Holdpoint is'},
+ {id:'what-isnt',nav:'What it is not'},
+ {id:'how',nav:'How it decides what to keep'},
+ {id:'before',nav:'Before you start'},
+ {id:'u',nav:'Using it',head:true},
+ {id:'s1',nav:'1 · Choosing files'},
+ {id:'s2',nav:'2 · The four levels'},
+ {id:'s3',nav:'3 · The review'},
+ {id:'s4',nav:'4 · Release'},
+ {id:'recipient',nav:'What the recipient does'},
+ {id:'key',nav:'The key file'},
+ {id:'encrypt',nav:'Encrypting what you send'},
+ {id:'cert',nav:'The certificate'},
+ {id:'v',nav:'Checking your work',head:true},
+ {id:'verify',nav:'Verify before you send'},
+ {id:'trouble',nav:'Troubleshooting'},
+ {id:'decode',nav:'Decoding a reply'},
+ {id:'trial',nav:'If you are trying it out'},
+ {id:'support',nav:'Getting help'},
+ {id:'selftest',nav:'Run the self-test'},
+ {id:'a',nav:'Appendices',head:true},
+ {id:'appa',nav:'A · Field reference'},
+ {id:'appb',nav:'B · Glossary A–Z'},
+ {id:'appc',nav:'C · The XER format'},
+ {id:'appd',nav:'D · Limits & standards'}
+];
+
+function buildHelp(){
+  var nav='';
+  HELP_SECTIONS.forEach(function(s){
+    nav+= s.head ? '<a class="h">'+s.nav+'</a>'
+                 : '<a href="#hp-'+s.id+'" data-go="hp-'+s.id+'">'+s.nav+'</a>';
+  });
+  document.getElementById('helpNav').innerHTML=nav;
+
+  var h='';
+  h+='<h3 id="hp-contents">Contents</h3><div class="toc">';
+  HELP_SECTIONS.forEach(function(s){ if(!s.head&&s.id!=='contents')
+    h+='<a href="#hp-'+s.id+'" data-go="hp-'+s.id+'">'+s.nav+'</a>'; });
+  h+='</div>';
+
+  /* ---------------------------------------------------------------- getting started */
+  h+='<h3 id="hp-what-is">What Holdpoint is</h3>'
+   + '<p>Holdpoint makes a share-safe copy of a Primavera P6 <code>.xer</code> export. It replaces '
+   + 'identifying names with codes, removes the parts of the file that carry commentary, contacts '
+   + 'and commercial detail, and leaves the scheduling data untouched so the copy still calculates '
+   + 'exactly as the original does.</p>'
+   + '<p>It is named after the inspection term. A hold point is a mandatory stop: work does not '
+   + 'proceed past it until someone has looked and released it. Holdpoint works the same way — no '
+   + 'download exists until you have opened the output and confirmed you have read it.</p>'
+   + '<p>Everything happens inside this page, on your own machine. There is no server, no account, '
+   + 'no upload and no telemetry. You can confirm that yourself: open your browser\u2019s developer '
+   + 'tools, switch to the Network tab, and run a file through. You will see no requests at all.</p>'
+   + '<h4>Who it is for</h4><ul>'
+   + '<li>Planners sending a programme to a client, subcontractor or joint-venture partner.</li>'
+   + '<li>Contractors handing a schedule to a delay analyst, expert witness or adjudicator.</li>'
+   + '<li>Anyone sending a live commercial programme to a software vendor for testing or support.</li>'
+   + '<li>Consultants who need to keep a worked example without keeping the client in it.</li></ul>';
+
+  h+='<h3 id="hp-what-isnt">What Holdpoint is not</h3>'
+   + '<div class="callout stop"><b>Read this section properly.</b> Most of the trouble people get '
+   + 'into with tools like this comes from assuming they do more than they do.</div>'
+   + '<h4>It is not an anonymiser in the legal sense</h4>'
+   + '<p>Under UK GDPR, anonymisation means data that can no longer be related to an identifiable '
+   + 'person by any reasonably likely means. Holdpoint performs <em>pseudonymisation</em> (Article '
+   + '4(5)): it replaces identifiers with codes while a key that reverses them continues to exist — '
+   + 'in your hands. Pseudonymised data is still personal data. Holdpoint reduces risk; it does not '
+   + 'take your file out of scope.</p>'
+   + '<h4>It does not make a schedule untraceable</h4>'
+   + '<p>Real dates, durations, working calendars, float and the shape of the network are all kept, '
+   + 'because a schedule without them is useless. Those alone can identify a project. A 406-activity '
+   + 'tower with a Sunday-to-Thursday calendar, a Ramadan shutdown and a 2028 completion narrows to a '
+   + 'very short list for anyone who knows the market.</p>'
+   + '<h4>It does not read your mind about custom fields</h4>'
+   + '<p>Activity codes, notebook topics and user-defined fields are removed in full rather than '
+   + 'inspected, because there is no reliable way to tell a harmless code from one containing a '
+   + 'client name. If you needed those, the recipient will have to work without them.</p>'
+   + '<h4>It does not support PMXML, MPP, CSV or Excel</h4>'
+   + '<p>Only <code>.xer</code>. See <a href="#hp-trouble" data-go="hp-trouble">Troubleshooting</a> '
+   + 'for why, and what to do instead.</p>'
+   + '<h4>It does not warrant the result</h4>'
+   + '<p>Holdpoint removes what is on its list, tells you exactly what it removed, and makes you look '
+   + 'before it lets go of the file. It gives no warranty that the output contains nothing sensitive. '
+   + 'The decision to release is yours.</p>';
+
+  h+='<h3 id="hp-how">How it decides what to keep</h3>'
+   + '<p>Most tools of this kind work from a <em>blocklist</em>: a list of things to remove. That '
+   + 'design fails quietly. Anything the author did not think of — a field in a newer P6 release, a '
+   + 'table they had never seen — sails straight through, and the tool reports success.</p>'
+   + '<p>Holdpoint is built the other way round, as a <em>keep list</em>:</p>'
+   + '<ul><li>A table reaches the output only if it is named in the keep list.</li>'
+   + '<li>Within a kept table, a field is copied across unchanged only if it is classified as '
+   + 'structural.</li>'
+   + '<li><b>Everything else is emptied or removed by default</b> — including fields and tables the '
+   + 'tool has never encountered.</li>'
+   + '<li>Anything unrecognised is listed for you by name in the review and in the certificate.</li></ul>'
+   + '<div class="callout"><b>What that means in practice.</b> If Oracle ships a P6 release that adds '
+   + 'a field holding the main contractor\u2019s name, Holdpoint empties it without being told to, and '
+   + 'shows it to you as unrecognised. A blocklist tool would publish it.</div>'
+   + '<p>The full classification of every field is in '
+   + '<a href="#hp-appa" data-go="hp-appa">Appendix A</a>, generated from the same list the engine '
+   + 'uses, so it cannot fall out of step with the code.</p>'
+   + '<h4>The row, not the header</h4>'
+   + '<p>An XER row can carry more columns than its own header declares — after a hand edit, a '
+   + 'concatenation, or an export from a mismatched version. Holdpoint reads the width of the row '
+   + 'rather than trusting the header, so a surplus column has no declared name, no classification, '
+   + 'and is emptied like any other unknown.</p>';
+
+  h+='<h3 id="hp-before">Before you start</h3><ol>'
+   + '<li><b>Work from a copy.</b> Holdpoint only ever reads your file and never writes to it, but '
+   + 'good practice is good practice.</li>'
+   + '<li><b>Export from P6 as XER</b>, not PMXML. File \u2192 Export \u2192 Primavera PM (XER).</li>'
+   + '<li><b>Decide what the recipient actually needs.</b> An expert examining delay usually needs '
+   + 'logic and dates, not your rates. Send the least that does the job.</li>'
+   + '<li><b>Know who you are sending to</b> and whether a confidentiality agreement is in place. '
+   + 'This tool reduces what is in the file; it does not replace a contract.</li>'
+   + '<li><b>Set aside ten minutes.</b> The review step is the product. Rushing it defeats the point.'
+   + '</li></ol>';
+
+  /* ---------------------------------------------------------------------- using it */
+  h+='<h3 id="hp-s1">Step 1 · Choosing files</h3>'
+   + '<p>Drag one or more <code>.xer</code> files onto the drop area, or use <b>Browse files</b>. '
+   + 'Files are listed with their size; <b>remove</b> takes one out and <b>Clear</b> empties the list.'
+   + '</p>'
+   + '<h4>Sending several exports together</h4>'
+   + '<p>Add them all in one go. A single key is shared across the whole batch, so an activity that '
+   + 'appears in your baseline and in three monthly updates keeps the <em>same</em> code in all four '
+   + 'files. Run them separately and the codes will not line up, and nobody will be able to compare '
+   + 'the revisions.</p>'
+   + '<div class="callout warn"><b>Order matters.</b> Files are sorted by filename before they are '
+   + 'numbered <code>_01</code>, <code>_02</code> and so on. Name your exports so the sort order is '
+   + 'the order you want — for example <code>01_baseline.xer</code>, <code>02_update_jan.xer</code>.'
+   + '</div>'
+   + '<h4>Clearing up</h4>'
+   + '<p><b>Clear files</b> empties the file list and nothing else. <b>Reset everything</b> returns '
+   + 'the application to the state it was in when you opened it: files, sharing level, cost options, '
+   + 'results, the mapping key held in memory and every download link are all discarded.</p>'
+   + '<p>Use Reset between jobs, and always before handing the machine to someone else. Stale state '
+   + 'in a tool like this is a safety problem rather than an untidiness — a level 4 setting left '
+   + 'selected from an earlier batch, or live download links to somebody else\u2019s programme still '
+   + 'sitting on the page, is exactly how the wrong file gets sent.</p>'
+   + '<h4>What is checked on load</h4>'
+   + '<ul><li>The extension must be <code>.xer</code>.</li>'
+   + '<li>The content must contain an <code>ERMHDR</code> header. A file renamed to <code>.xer</code> '
+   + 'is refused.</li>'
+   + '<li><b>Arabic and Cyrillic exports read correctly.</b> A programme written in Arabic on a '
+   + 'Gulf installation, or in Russian on an Eastern European one, comes through as readable text '
+   + 'rather than rows of question marks. Names are still replaced with codes, and the real names '
+   + 'round-trip through the key unchanged.</li>'
+   + '<li>Character encoding is detected automatically: byte-order marks, strict UTF-8, then '
+   + 'Windows-1256 (Arabic) and Windows-1251 (Cyrillic) by looking for coherent runs of script, '
+   + 'falling back to Windows-1252. Gulf and Eastern European exports are read correctly rather than '
+   + 'turned into question marks.</li></ul>';
+
+  h+='<h3 id="hp-s2">Step 2 · The four sharing levels</h3>'
+   + '<p>Every level replaces names with codes and removes commentary, contacts and identifiers. '
+   + 'They differ only in how much resource and cost information travels.</p>'
+   + '<h4>Level 1 · Logic only</h4>'
+   + '<p>Activities, logic links, durations, dates, float, constraints, calendars, progress and '
+   + 'scheduling options. Resources, rates, assignments and cost accounts are removed in full.</p>'
+   + '<p class="mut"><b>What the recipient can work out:</b> the critical path, total and free float, '
+   + 'logic quality, DCMA-style health checks, how the programme is built and how it has moved. '
+   + '<b>What they cannot:</b> anything about labour, plant, money or who is doing the work.</p>'
+   + '<p><b>Use it for:</b> delay analysis, programme audits, logic reviews, second opinions.</p>'
+   + '<h4>Level 2 · Resources, no money</h4>'
+   + '<p>Adds resources, roles, assignments and cost accounts, with names replaced by codes. Every '
+   + 'cost value is set to zero.</p>'
+   + '<p class="mut"><b>What the recipient can work out:</b> labour and plant demand, resource '
+   + 'histograms, over-allocation, levelling problems. <b>What they cannot:</b> rates, values, or '
+   + 'what any resource is called.</p>'
+   + '<p><b>Use it for:</b> resource and productivity reviews, disruption analysis.</p>'
+   + '<h4>Level 3 · Cost shape, no cash</h4>'
+   + '<p>Keeps the proportions and the cashflow curve and removes the cash. Two ways to do it:</p>'
+   + '<ul><li><b>Scale to a 1000-point total.</b> Every cost is multiplied by one shared factor so '
+   + 'that the cost values in the batch add up to 1000 points once signs are ignored. Results come '
+   + 'back in points. Credits stay negative, so the signed total will be below 1000.</li>'
+   + '<li><b>Your own multiplier.</b> You pick a number, keep it, and divide anything you get back to '
+   + 'read real money. Holdpoint never stores or transmits it. A multiplier of 1 is refused, because '
+   + 'it would leave your real values untouched while the certificate said otherwise.</li></ul>'
+   + '<p class="mut"><b>What the recipient can work out:</b> the split between categories, the shape '
+   + 'of the spend curve, where the money is concentrated. <b>What they cannot:</b> the contract '
+   + 'value, any rate, or any real figure.</p>'
+   + '<div class="callout warn"><b>If there is nothing to normalise against</b> — no cost values in '
+   + 'the file at all — Holdpoint does not quietly pass values through. It sets every cost to zero '
+   + 'instead and says so on screen and in the certificate.</div>'
+   + '<h4>Level 4 · Real cost</h4>'
+   + '<p>Real cash values and the currency travel with the file. Names are still replaced with codes '
+   + 'and everything else is still removed.</p>'
+   + '<p><b>Use it only</b> where the recipient is entitled to the money — your own cost consultant, '
+   + 'a quantum expert instructed on your side, an auditor under engagement.</p>'
+   + '<div class="callout"><b>Changing level clears your results.</b> If you prepare at one level '
+   + 'and then change your mind, the earlier output and its download links are destroyed immediately. '
+   + 'You cannot accidentally send a level 4 file you prepared five minutes ago.</div>';
+
+  h+='<h3 id="hp-s3">Step 3 · The review</h3>'
+   + '<p>This is the hold point. Nothing can be downloaded until you tick the confirmation at the '
+   + 'bottom of this panel.</p>'
+   + '<h4>The verdict</h4>'
+   + '<p>Holdpoint re-reads the file it has just produced, as if it were a stranger\u2019s, and checks '
+   + 'every value against what it should be. Three outcomes:</p>'
+   + '<table><thead><tr><th style="width:22%">Verdict</th><th>Meaning</th></tr></thead><tbody>'
+   + '<tr><td><b>Passed</b></td><td>Every value kept looks like a number, a date, a code or a known '
+   + 'setting. Nothing resembling prose or a name survived. This is not a guarantee — read the file.'
+   + '</td></tr>'
+   + '<tr><td><b>Review required</b></td><td>The output is sound but one or more values could not be '
+   + 'confidently classified. Each is listed with the value shown. You decide.</td></tr>'
+   + '<tr><td><b>Blocked</b></td><td>Something identifying survived. Downloads stay locked entirely. '
+   + 'Report the batch reference so the keep list can be corrected.</td></tr>'
+   + '</tbody></table>'
+   + '<h4>The redaction ledger</h4>'
+   + '<p>Every value that was taken out is shown as a black bar next to the code that replaced it. '
+   + 'Click a bar, or focus it and press Enter, to reveal it. <b>Reveal all</b> opens the lot. Bars '
+   + 'stay hidden by default so you can review on a busy site without exposing the very thing you are '
+   + 'protecting.</p>'
+   + '<h4>Reconciliation &mdash; proving what survived</h4>'
+   + '<p>The rest of the review tells you what was <em>taken out</em>. The reconciliation table tells '
+   + 'you what <em>came through</em>: for every table in your file, the number of rows that went in '
+   + 'against the number that came out.</p>'
+   + '<p>Every table you kept must read <b>complete</b>. Tables that were removed in full show their '
+   + 'whole row count as the difference, with the reason beside them. <b>A difference on a table that '
+   + 'should have been kept would mean rows went missing, and none ever should</b> — if you see one, '
+   + 'do not send the file, and report the batch reference.</p>'
+   + '<p>This is the check to hand to document control. It is the evidence that the schedule is '
+   + 'intact, as opposed to merely scrubbed. The same table appears in the certificate and in the '
+   + 'removal log.</p>'
+   + '<h4>Not recognised</h4>'
+   + '<p>If a field or table was not on the keep list, it appears in its own block, emptied, with a '
+   + 'sample of what it held. This is the tool behaving correctly. It is also worth reading — it tells '
+   + 'you what your P6 version is carrying that this build has not seen before.</p>'
+   + '<h4>Reading the file itself</h4>'
+   + '<p>The <b>Open</b> button shows the actual text of the file you would be sending. Use Ctrl-F or '
+   + 'Cmd-F and search for anything you want to be certain about: your client\u2019s name, a rate, a '
+   + 'package reference, a person. If you can find it, do not send it.</p>';
+
+  h+='<h3 id="hp-s4">Step 4 · Release</h3>'
+   + '<p>Once you confirm, four things become available.</p>'
+   + '<table><thead><tr><th style="width:34%">File</th><th>What it is for</th></tr></thead><tbody>'
+   + '<tr><td><code>SCRUBBED_&lt;ref&gt;_01.xer</code></td><td>The share-safe schedule. This is what '
+   + 'you send.</td></tr>'
+   + '<tr><td><code>HOLDPOINT_CERTIFICATE_&lt;ref&gt;.txt</code></td><td>The record of what was '
+   + 'removed, with file fingerprints. Send it with the schedule or keep it on file.</td></tr>'
+   + '<tr><td><code>REMOVAL_LOG_&lt;ref&gt;.csv</code></td><td>The same information as a spreadsheet, '
+   + 'for document control.</td></tr>'
+   + '<tr><td><code>KEY_&lt;ref&gt;_…</code></td><td>Maps codes back to real names. '
+   + '<b>Never send this.</b></td></tr></tbody></table>'
+   + '<p>Every file in a batch carries the same batch reference, so a mixed set is obvious at a '
+   + 'glance.</p>';
+
+  h+='<h3 id="hp-recipient">What the recipient does</h3>'
+   + '<p>Worth understanding, because they will ask you.</p>'
+   + '<p><b>They treat it as an ordinary XER.</b> There is nothing special about the file and nothing '
+   + 'for them to install. They import it into P6 the way they would any other export &mdash; into an '
+   + 'empty project rather than merging it into an existing one &mdash; and it schedules identically '
+   + 'to your original, because every date, duration, lag, constraint, calendar and float value is '
+   + 'unchanged.</p>'
+   + '<h4>What they see</h4>'
+   + '<p>Codes where the names were: <code>ACT-00147</code>, <code>WBS element 0003</code>, '
+   + '<code>Resource 0012</code>. The structure is entirely intact, so the critical path, the logic '
+   + 'quality, the float and the sequence all read normally. What they cannot do is tell you what any '
+   + 'of it is called.</p>'
+   + '<h4>How they report back</h4>'
+   + '<p>They quote the codes. <i>&ldquo;ACT-00147 is driving the critical path and shows zero '
+   + 'float.&rdquo;</i> You paste that into '
+   + '<a href="#hp-decode" data-go="hp-decode">the decode panel</a> with your key, and it comes back '
+   + 'in real names. A report written entirely in codes is perfectly readable at your end.</p>'
+   + '<div class="callout stop"><b>They should never ask for the key, and you should never send it.</b> '
+   + 'Nothing about their work needs it. If they push, that is worth noticing.</div>'
+   + '<h4>Send them a note with it</h4>'
+   + '<p>The release panel has a <b>Write the covering note</b> button. It produces a short note '
+   + 'explaining what the file is, what they can and cannot do with it, and how to quote the codes '
+   + 'back &mdash; written for the level you actually chose, with your batch reference already in it. '
+   + 'Copy it into your email above the attachments.</p>'
+   + '<p class="mut">Without it, the usual outcome is a phone call asking why every activity is '
+   + 'called ACT-something.</p>';
+
+  h+='<h3 id="hp-key">The key file</h3>'
+   + '<p>When your expert reports that <em>ACT-00147 is driving the critical path</em>, the key is '
+   + 'what turns that back into <em>piling to grid B4</em>. Without it the report is unreadable.</p>'
+   + '<div class="callout stop"><b>The key is the one file that undoes everything.</b> It must never '
+   + 'travel with the scrubbed schedule, never go in the same email, and never sit in the same shared '
+   + 'folder. Anyone holding both has your original.</div>'
+   + '<h4>Storing it</h4><ul>'
+   + '<li>Encrypt it with a passphrase (the button is right there) and keep it in your own document '
+   + 'management system against the batch reference.</li>'
+   + '<li>If your organisation has a records retention policy, the key falls under it.</li>'
+   + '<li>If you lose it, the scrubbed file cannot be decoded — not by you, not by anyone, not by us. '
+   + 'There is no recovery, by design. Re-run the same source file at the same level to generate an '
+   + 'identical mapping again.</li></ul>';
+
+  h+='<h3 id="hp-encrypt">Encrypting what you send</h3>'
+   + '<p>Scrubbing protects you from the recipient reading things they should not. Encryption '
+   + 'protects you from somebody else reading it in transit. They are different risks and encryption '
+   + 'does not substitute for scrubbing.</p>'
+   + '<h4>The key file</h4>'
+   + '<p>Holdpoint can encrypt the key file directly: AES-GCM with a 256-bit key derived from your '
+   + 'passphrase using PBKDF2-SHA256 at 600,000 iterations, all performed by your browser\u2019s own '
+   + 'cryptography. The salt and initialisation vector are random per file and stored alongside the '
+   + 'ciphertext.</p>'
+   + '<div class="callout warn"><b>Send the passphrase separately.</b> By phone, by text, in person — '
+   + 'anything except the message carrying the file. A passphrase in the same email is no protection '
+   + 'at all. Use a phrase, not a word: four unrelated words beat one clever substitution.</div>'
+   + '<h4>The schedule itself</h4>'
+   + '<p>If the transmission worries you, encrypt the package before it leaves:</p><ul>'
+   + '<li><b>7-Zip</b> — create a <code>.7z</code> archive, tick <em>Encrypt file names</em>, choose '
+   + 'AES-256. Free, and available on any Windows machine.</li>'
+   + '<li><b>Your document management or CDE platform</b> — a controlled transmittal beats email '
+   + 'entirely and gives you a receipt.</li>'
+   + '<li><b>Encrypted email</b> — S/MIME or PGP if both sides are set up for it.</li>'
+   + '<li><b>A secure transfer service</b> with link expiry and download notification.</li></ul>'
+   + '<p>Whatever you use, quote the batch reference and the SHA-256 from the certificate so the '
+   + 'recipient can prove what arrived is what you sent.</p>';
+
+  h+='<h3 id="hp-cert">The certificate</h3>'
+   + '<p>A plain-text record of the release. It contains:</p><ul>'
+   + '<li>Tool version, timestamp, batch reference, sharing level and cost basis.</li>'
+   + '<li>The verdict, and how many values were examined.</li>'
+   + '<li>Confirmation that the review was completed before release.</li>'
+   + '<li>A SHA-256 fingerprint of every file in and every file out.</li>'
+   + '<li>Counts of what was coded, emptied, zeroed, scaled and dropped.</li>'
+   + '<li>Every table removed in full, with the reason.</li>'
+   + '<li>Every field emptied, by name, with counts.</li>'
+   + '<li>Everything that was not recognised.</li>'
+   + '<li>A closing section stating plainly what the certificate does <em>not</em> assert.</li></ul>'
+   + '<p>It never contains a name, a value, a cost, or the scaling factor — publishing the factor '
+   + 'would let a reader recover your project total from any single scaled figure.</p>'
+   + '<h4>Checking a fingerprint</h4>'
+   + '<p>On Windows, in PowerShell: <code>Get-FileHash .\\SCRUBBED_….xer -Algorithm SHA256</code>. '
+   + 'On macOS or Linux: <code>shasum -a 256 SCRUBBED_….xer</code>. If it matches the certificate, '
+   + 'the file is byte-for-byte what Holdpoint produced.</p>';
+
+  /* --------------------------------------------------------------- checking your work */
+  h+='<h3 id="hp-verify">Verify before you send</h3>'
+   + '<p>Work through this every time. It takes a few minutes and it is the difference between a tool '
+   + 'that helped and a tool that gave you false confidence.</p>'
+   + '<ol>'
+   + '<li><b>Check the verdict.</b> Passed, or Review required with items you have read and accepted. '
+   + 'Never send on Blocked — you cannot anyway.</li>'
+   + '<li><b>Check the level is the one you intended.</b> It is stated at the top of the review panel '
+   + 'and in the certificate.</li>'
+   + '<li><b>Check the reconciliation.</b> Every table you meant to keep must read complete. A '
+   + 'missing row on a kept table is a stop.</li>'
+   + '<li><b>Read the cost line.</b> If it says costs were zeroed when you expected them normalised, '
+   + 'or the other way round, stop and find out why.</li>'
+   + '<li><b>Open the file and search it.</b> Ctrl-F for your client, your employer, the project name, '
+   + 'the site address, a known rate, the name of anyone on the team, a package or subcontract '
+   + 'reference. Every one should come back empty.</li>'
+   + '<li><b>Read the unrecognised list.</b> If it holds something sensitive, it has been emptied — '
+   + 'but you now know your P6 is carrying it, which matters for anything you send by other means.'
+   + '</li>'
+   + '<li><b>Scan the ledger.</b> Reveal all and read down it. Everything there is out of the file. '
+   + 'If something you expected to see is <em>missing</em> from the ledger, it may not have been '
+   + 'removed — find it in the output.</li>'
+   + '<li><b>Confirm the key is not in your send folder.</b> Look at the folder you are about to '
+   + 'attach from. If a file with <code>KEY</code> in the name is sitting there, move it now.</li>'
+   + '<li><b>Attach the certificate.</b> It is your record that you did this properly.</li>'
+   + '<li><b>Note the batch reference</b> in your transmittal or covering email.</li>'
+   + '<li><b>Decide about the residual risk.</b> Dates, durations and calendars are still real. If '
+   + 'the project is distinctive and the recipient is not trusted, that may be reason enough not to '
+   + 'send at all.</li>'
+   + '</ol>'
+   + '<div class="callout"><b>A second pair of eyes.</b> On anything contentious, have a colleague '
+   + 'run the same search on the same file before it goes. Two minutes of someone else\u2019s '
+   + 'attention is cheap.</div>';
+
+  h+='<h3 id="hp-trouble">Troubleshooting</h3><div class="ts">'
+   + ts('Nothing happens when I drop a file in',
+       'The file is not a .xer, or it has been renamed to .xer without being one.',
+       'Look under the drop area — a panel explains exactly why each file was refused. Export again '
+       +'from P6 as Primavera PM (XER).')
+   + ts('It refuses my PMXML file',
+       'PMXML is a different format and Holdpoint does not read it.',
+       'Open the project in P6 and export as XER instead. PMXML is refused rather than half-handled '
+       +'because a single PMXML can contain whole baseline copies of the schedule nested inside it, '
+       +'each with the original names. A tool that missed those would hand you a clean-looking file '
+       +'with several unclean schedules buried in it.')
+   + ts('It refuses my CSV or Excel export',
+       'Spreadsheet exports have no fixed structure.',
+       'The column headings in a CSV are whatever layout you happened to have on screen — renameable, '
+       +'translatable, and indistinguishable from user-defined fields. There is no safe way to know '
+       +'what each column holds. Use the XER export.')
+   + ts('The verdict says Review required',
+       'One or more kept values did not match any expected shape.',
+       'Read the listed items. Most are harmless P6 settings with unusual punctuation. If one is a '
+       +'real name, do not send the file — note the batch reference and report it.')
+   + ts('The verdict says Blocked',
+       'Something identifying survived the scrub. This should not happen.',
+       'Downloads stay locked. Note the batch reference and report it with a description of the '
+       +'source file. Do not attempt to work around it.')
+   + ts('The downloads will not unlock',
+       'The confirmation has not been ticked, or the verdict is Blocked.',
+       'Scroll to the bottom of the review panel and tick the confirmation. If it is Blocked, no '
+       +'amount of ticking will release it — that is deliberate.')
+   + ts('My results vanished',
+       'You changed the sharing level, added a file, or removed one.',
+       'Any change to the inputs destroys the previous output so a stale batch cannot be sent by '
+       +'mistake. Press Prepare again.')
+   + ts('It lists fields as "not recognised"',
+       'Your P6 version writes fields this build has not seen.',
+       'They have been emptied, which is the correct behaviour. The file is safe to send. Send the '
+       +'list on so the keep list can be extended deliberately in a later release.')
+   + ts('P6 will not import the scrubbed file',
+       'Tables that carried supporting data have been removed in full.',
+       'Import the scrubbed file into an empty project rather than merging it into an existing one. '
+       +'If it still refuses, check the P6 import log for which table it objects to and report it '
+       +'with the batch reference.')
+   + ts('My expert says the schedule will not calculate',
+       'Almost always the schedule was already like that.',
+       'Holdpoint does not alter a single date, duration, lag, calendar or relationship — that is '
+       +'verified against real files on every release. Reschedule the original in P6 and compare. If '
+       +'the original calculates and the scrubbed copy does not, report it.')
+   + ts('Costs are still visible and I chose level 3',
+       'Either you are looking at quantities rather than costs, or the file had no cost values.',
+       'Quantities are not costs and are kept from level 2. If the file held no cost values at all, '
+       +'there was nothing to normalise against, so every cost was set to zero instead and the panel '
+       +'and certificate say so.')
+   + ts('Arabic or Russian text came out as question marks',
+       'The file was decoded with the wrong character set.',
+       'Holdpoint detects Windows-1256 and Windows-1251 automatically. If it still looks wrong, the '
+       +'source file itself is likely already corrupted — open it in a text editor and check. Names '
+       +'are replaced with codes anyway, so this affects legibility of the ledger rather than the '
+       +'safety of the output.')
+   + ts('The same activity has different codes in two batches',
+       'They were prepared in separate runs.',
+       'Codes are allocated per batch. Add every file you want comparable into one run, and they will '
+       +'share a single key. If you have already sent one batch, re-run everything together and send '
+       +'the whole set again.')
+   + ts('The browser froze for a few seconds',
+       'A large batch is processed in one pass.',
+       'The button shows a working state while it runs. A 1.7 MB file takes well under a second; '
+       +'roughly 7 MB across several files takes a few seconds. Wait for it.')
+   + ts('The encryption button is missing',
+       'Your browser is not providing cryptography in this context.',
+       'Some browsers withhold the crypto API for pages opened directly from disk. The key can still '
+       +'be saved unencrypted — store it somewhere safe, or open Holdpoint from its installed '
+       +'application rather than from a loose file.')
+   + ts('I lost the key file',
+       'There is no recovery mechanism, deliberately.',
+       'Re-run the same source file at the same level. The mapping is deterministic, so you will get '
+       +'an identical key back. If you no longer have the source file, the codes cannot be decoded by '
+       +'anyone.')
+   + ts('The reconciliation shows a difference on a table I wanted to keep',
+       'Rows have gone missing from a kept table. This should never happen.',
+       'Do not send the file. Note the batch reference and the table name and report it. The '
+       +'reconciliation exists precisely so this cannot pass unnoticed.')
+   + ts('I want to be sure this copy of the application is sound',
+       'You have just downloaded or updated it, or your IT department wants evidence.',
+       'Open Help and run the self-test, or use the link in the page footer. It puts a built-in '
+       +'fixture through the same engine your files go through and checks the results against '
+       +'known-good answers. No file of yours is involved. If any check fails, stop using that copy '
+       +'and download a fresh one.')
+   + ts('I need to hand the machine to a colleague mid-job',
+       'Files, options, results and live download links are still loaded.',
+       'Press Reset everything in step 1. It discards the lot, including the mapping key held in '
+       +'memory and every download link, and confirms what it cleared.')
+   + ts('The fingerprint does not match what I received',
+       'The file changed after it left you.',
+       'Some mail systems alter attachments. Send it inside a zip or 7z archive and compare the hash '
+       +'again.')
+   + '</div>';
+
+  h+='<h3 id="hp-decode">Decoding a reply</h3>'
+   + '<p>Open <b>Decode a report</b> from the top of the page. Load the key for that batch &mdash; the '
+   + '<code>KEY_&hellip;.csv</code>, or the encrypted <code>.json</code> with its passphrase &mdash; '
+   + 'then paste in whatever came back. Every code in the text is replaced with the real name.</p>'
+   + '<p>Match the batch reference on the key filename to the file you sent. A key from a different '
+   + 'batch will not match, and the panel will tell you so rather than produce nonsense.</p>'
+   + '<div class="callout warn">The decoded text names your project and your activities again. Treat '
+   + 'it like the original programme, not like the scrubbed copy.</div>';
+
+  h+='<h3 id="hp-trial">If you are trying it out</h3>'
+   + '<p>Use the trial to answer the one question that matters for your setup: <b>does the scrubbed '
+   + 'file go back into your own P6 cleanly?</b></p>'
+   + '<ol>'
+   + '<li>Run one of your real programmes through, at the level you would actually send.</li>'
+   + '<li>Check the reconciliation table &mdash; every table you kept should read <b>complete</b>.</li>'
+   + '<li><b>Import the scrubbed file into P6, into an empty project rather than merging it into an '
+   + 'existing one.</b> Confirm it loads, then reschedule it and compare the dates against the '
+   + 'original.</li>'
+   + '<li>Search the output for your client, your rates and your team.</li>'
+   + '</ol>'
+   + '<div class="callout warn"><b>If the import fails, tell us before the trial ends.</b> Send the '
+   + 'batch reference, your P6 version and the import log to <b>'+SUPPORT_EMAIL+'</b>. That is a '
+   + 'defect and it will be treated as one. Do not buy it and hope &mdash; and please do not leave '
+   + 'it as a review without giving us the chance to fix it.</div>'
+   + '<p class="mut">Everything else in this application is verified against real P6 exports on every '
+   + 'release, and you can confirm the engine yourself with the '
+   + '<a href="#hp-selftest" data-go="hp-selftest">built-in self-test</a>. The one thing that cannot '
+   + 'be tested without a P6 licence is P6\u2019s own importer, which is why this page exists.</p>';
+
+  h+='<h3 id="hp-support">Getting help</h3>'
+   + '<p>Email <b><a href="mailto:'+SUPPORT_EMAIL+'">'+SUPPORT_EMAIL+'</a></b>.</p>'
+   + '<h4>What to include</h4><ul>'
+   + '<li>The <b>batch reference</b> shown at the top of the review panel, or on the certificate.</li>'
+   + '<li>The <b>version</b> &mdash; XER Holdpoint '+APP_REV+'.</li>'
+   + '<li>Which <b>sharing level</b> you chose.</li>'
+   + '<li>The <b>certificate</b> if you still have it. It carries everything needed to understand '
+   + 'what happened, and it contains no names, no values and no costs.</li>'
+   + '<li>Your <b>P6 version</b>, if the problem is about import or about unrecognised fields.</li>'
+   + '</ul>'
+   + '<div class="callout stop"><b>Never send your original programme, and never send the key file.</b> '
+   + 'Nothing about supporting this application requires either. If a scrubbed file is genuinely '
+   + 'needed to reproduce a fault, it will be asked for explicitly &mdash; and it will be the '
+   + 'scrubbed one.</div>'
+   + '<h4>Report these straight away</h4><ul>'
+   + '<li>A verdict of <b>Blocked</b> &mdash; something identifying survived, which should not happen.</li>'
+   + '<li>A <b>difference on a kept table</b> in the reconciliation &mdash; rows should never go missing.</li>'
+   + '<li>Any <b>failing check</b> in the self-test.</li>'
+   + '<li>A scrubbed file that <b>will not import into P6</b>, with the import log if you have it.</li>'
+   + '</ul>'
+   + '<h4>Printing the certificate</h4>'
+   + '<p>The release panel has a <b>Print certificate</b> button. It opens a print preview of the '
+   + 'certificate as a document &mdash; letterhead, batch reference, fingerprints, the reconciliation '
+   + 'table and everything that was removed &mdash; ready to file, staple to a transmittal, or put in '
+   + 'front of a client. The plain-text version remains available as a download for machine use.</p>';
+
+  h+='<h3 id="hp-selftest">Run the self-test</h3>'
+   + '<p>Holdpoint can check itself. It runs a built-in fixture — a small made-up schedule carrying '
+   + 'known names, a made-up field, a made-up table and a deliberately malformed row — through the '
+   + 'same engine your files go through, and compares the result against known-good answers.</p>'
+   + '<p>Use it if you have just downloaded or updated the application, if your IT department wants '
+   + 'evidence before approving it, or any time you simply want to satisfy yourself before trusting '
+   + 'it with something sensitive. No file of yours is involved and nothing leaves this page.</p>'
+   + '<p><button class="btn" type="button" id="stRun">Run the self-test</button></p>'
+   + '<div id="stOut"></div>'
+   + '<div class="callout warn"><b>If any check fails, stop.</b> Do not use that copy of the '
+   + 'application on a real programme. Download a fresh one and run the test again before you '
+   + 'rely on it.</div>';
+
+  /* --------------------------------------------------------------------- appendices */
+  h+='<h3 id="hp-appa">Appendix A · Field reference</h3>'
+   + '<p>Generated from the keep list the engine actually uses, so it is always in step with the '
+   + 'code. Type in the box to filter.</p>'
+   + buildReference();
+
+  h+='<h3 id="hp-appb">Appendix B · Glossary A\u2013Z</h3><table><tbody>'
+   + gl('Activity code','A P6 classification tag attached to activities. Removed in full — they very '
+       +'often carry client, package or subcontractor names.')
+   + gl('Anonymisation','Irreversibly removing the link to an identifiable person. Holdpoint does not '
+       +'do this; see Pseudonymisation.')
+   + gl('Batch reference','The identifier stamped on every file in one run, e.g. '
+       +'<code>20260728-4KQ2</code>. Quote it in correspondence.')
+   + gl('Calendar','The working pattern that turns durations into dates. Kept in full — the schedule '
+       +'cannot calculate without it. Its content is checked for stray text.')
+   + gl('Certificate','The plain-text record of a release. See '
+       +'<a href="#hp-cert" data-go="hp-cert">The certificate</a>.')
+   + gl('Code','The replacement for a real name, e.g. <code>ACT-00147</code>, '
+       +'<code>WBS element 0003</code>. Stable within a batch.')
+   + gl('CPM','Critical Path Method. The forward and backward pass that produces early and late dates '
+       +'and float.')
+   + gl('Data date','The point from which remaining work is scheduled. Kept.')
+   + gl('DCMA 14-point','A widely used schedule health assessment. Runs perfectly well on a '
+       +'level 1 file.')
+   + gl('ERMHDR','The first line of an XER, holding version, export date, user and database name. '
+       +'Cleared except for the export date and, at level 4, the currency code.')
+   + gl('Float','Total float is how long an activity can slip before it delays the project; free '
+       +'float before it delays its successor. Both kept.')
+   + gl('GUID','A globally unique database identifier. Always emptied — it can link a file back to a '
+       +'specific database.')
+   + gl('Hold point','An inspection term: a mandatory stop that work cannot pass until released. The '
+       +'design principle of this tool.')
+   + gl('Keep list','The classification of every table and field. Anything absent from it is removed '
+       +'by default.')
+   + gl('Key file','The mapping from codes back to real names. Never send it.')
+   + gl('Logic','The relationships between activities — finish-to-start and the rest, with lags. Kept '
+       +'exactly.')
+   + gl('Notebook topic','Free-text commentary attached to activities or WBS. Removed in full.')
+   + gl('PMXML','P6\u2019s XML export format. Not supported.')
+   + gl('POBS','Performing Organisation Breakdown Structure. Removed in full — it names managers.')
+   + gl('Pseudonymisation','Replacing identifiers with codes while a key that reverses them still '
+       +'exists. What Holdpoint does. Under UK GDPR Article 4(5) the result is still personal data.')
+   + gl('Reconciliation','The rows-in against rows-out table. Proves the schedule came through '
+       +'complete rather than merely scrubbed.')
+   + gl('Relationship','See Logic.')
+   + gl('Resource','Labour, plant or material assigned to activities. Present from level 2 with names '
+       +'replaced by codes.')
+   + gl('SHA-256','A cryptographic fingerprint. Identical files give identical fingerprints; any '
+       +'change gives a completely different one.')
+   + gl('Self-test','A built-in check that runs a fixture through the engine and compares the '
+       +'result against known-good answers, so you can verify your own copy behaves correctly.')
+   + gl('Structural field','A field the schedule needs to calculate — an id, a date, a duration, a '
+       +'float, a flag, a known setting. Kept exactly as found.')
+   + gl('UDF','User-Defined Field. Removed in full, definitions and values alike.')
+   + gl('WBS','Work Breakdown Structure. Its shape is kept; its names become codes.')
+   + gl('XER','P6\u2019s tab-delimited text export. The only format Holdpoint reads.')
+   + '</tbody></table>';
+
+  h+='<h3 id="hp-appc">Appendix C · The XER format</h3>'
+   + '<p>Useful background if you want to satisfy yourself about what the tool is doing.</p>'
+   + '<p>An XER is a plain text file of tab-separated lines. Each line begins with a marker:</p>'
+   + '<table><thead><tr><th style="width:20%">Marker</th><th>Meaning</th></tr></thead><tbody>'
+   + '<tr><td><code>ERMHDR</code></td><td>The header line: version, export date, user, database, '
+   + 'currency.</td></tr>'
+   + '<tr><td><code>%T</code></td><td>Starts a table, e.g. <code>%T&#9;TASK</code>.</td></tr>'
+   + '<tr><td><code>%F</code></td><td>Names the columns for the table just started.</td></tr>'
+   + '<tr><td><code>%R</code></td><td>One row of data.</td></tr>'
+   + '<tr><td><code>%E</code></td><td>End of file.</td></tr></tbody></table>'
+   + '<p>Because it is plain text you can open a scrubbed file in Notepad and read every value. That '
+   + 'is exactly what the built-in viewer does, and why the search step in the checklist works.</p>'
+   + '<p>When Holdpoint removes a table it removes the <code>%T</code> and <code>%F</code> lines too, '
+   + 'so the table is absent rather than present-but-empty.</p>';
+
+  h+='<h3 id="hp-appd">Appendix D · Limits and standards</h3>'
+   + '<h4>What is verified on every release</h4><ul>'
+   + '<li>Real P6 exports are processed at all four levels and searched for every name-like value '
+   + 'from the source.</li>'
+   + '<li>Activities, logic links and calendar definitions are compared byte for byte against the '
+   + 'original at every level.</li>'
+   + '<li>The verifier is proven to fail when identifying data is deliberately re-inserted.</li>'
+   + '<li>Malformed input is exercised: truncated files, rows before their headers, surplus columns, '
+   + 'duplicate tables, mixed line endings, null bytes, right-to-left text, values of 200,000 '
+   + 'characters.</li>'
+   + '<li>SHA-256 is checked against the published NIST test vectors.</li></ul>'
+   + '<h4>Known limits</h4><ul>'
+   + '<li>XER only. No PMXML, MPP, CSV or Excel.</li>'
+   + '<li>Dates are never shifted. Shifting them per activity would destroy the schedule; a uniform '
+   + 'offset is under consideration for a later release.</li>'
+   + '<li>Calendar working patterns are retained and can indicate a region.</li>'
+   + '<li>The keep list is built from the P6 releases available to us. Newer fields are emptied and '
+   + 'reported rather than recognised.</li>'
+   + '<li>Baselines held as separate XER exports must each be processed; there is nothing inside an '
+   + 'XER that Holdpoint silently skips.</li></ul>'
+   + '<h4>Cryptography</h4><ul>'
+   + '<li>Fingerprints: SHA-256.</li>'
+   + '<li>Key file encryption: AES-GCM, 256-bit, random 96-bit initialisation vector per file.</li>'
+   + '<li>Key derivation: PBKDF2-SHA256, 600,000 iterations, random 128-bit salt per file.</li>'
+   + '<li>All performed by the browser\u2019s own cryptography. No custom cipher, no third-party '
+   + 'library, no network.</li></ul>'
+   + '<h4>Legal</h4>'
+   + '<p>Holdpoint is provided as is, without warranty of any kind as to completeness or fitness for '
+   + 'purpose. You are responsible for verifying output before disclosure. Liability is limited to '
+   + 'the amount paid for the licence. Holdpoint is not affiliated with, endorsed by or sponsored by '
+   + 'Oracle. Oracle, Primavera and P6 are trademarks of Oracle Corporation.</p>';
+
+  document.getElementById('helpInner').innerHTML=h;
+
+  /* jump links, filter, and closing */
+  var main=document.getElementById('helpMain');
+  Array.prototype.forEach.call(document.querySelectorAll('[data-go]'),function(a){
+    a.onclick=function(e){ e.preventDefault();
+      var el=document.getElementById(a.getAttribute('data-go'));
+      if(el) main.scrollTop = el.offsetTop - 12;
+    };
+  });
+  var stb=document.getElementById('stRun');
+  if(stb) stb.onclick=renderSelfTest;
+  var flt=document.getElementById('refFilter');
+  if(flt) flt.oninput=function(){
+    var q=flt.value.toLowerCase().trim();
+    Array.prototype.forEach.call(document.querySelectorAll('#refBody tr[data-f]'),function(tr){
+      tr.style.display = !q || tr.getAttribute('data-f').indexOf(q)>=0 ? '' : 'none';
+    });
+    Array.prototype.forEach.call(document.querySelectorAll('#refBody table'),function(tb){
+      var rows=tb.querySelectorAll('tr[data-f]'), any=false;
+      Array.prototype.forEach.call(rows,function(r){ if(r.style.display!=='none') any=true; });
+      tb.style.display=any?'':'none';
+      var hd=tb.previousElementSibling;
+      if(hd&&hd.tagName==='H4') hd.style.display=any?'':'none';
+    });
+  };
+}
+function ts(sym,why,fix){
+  return '<div><div class="sym">'+sym+'</div><div class="why">'+why+'</div>'
+       + '<div class="fix">'+fix+'</div></div>';
+}
+function gl(term,def){
+  return '<tr><td style="width:26%"><b>'+term+'</b></td><td>'+def+'</td></tr>';
+}
+var helpBuilt=false;
+function openHelp(){
+  if(!helpBuilt){ buildHelp(); helpBuilt=true; }
+  document.getElementById('help').classList.add('on');
+  document.getElementById('helpClose').focus();
+}
+function closeHelp(){
+  document.getElementById('help').classList.remove('on');
+  document.getElementById('helpOpen').focus();
+}
+document.getElementById('decodeOpen').onclick=openDecode;
+document.getElementById('dcClose').onclick=closeDecode;
+document.getElementById('dcReset').onclick=resetDecode;
+document.getElementById('dcRun').onclick=runDecode;
+document.getElementById('dkBrowse').onclick=function(){document.getElementById('dkFile').click();};
+document.getElementById('dkFile').onchange=function(){
+  var f=this.files[0]; if(!f) return;
+  var r=new FileReader();
+  r.onload=function(){
+    var txt=String(r.result);
+    if(/^\s*\{/.test(txt)){
+      window._dkRaw=txt;
+      document.getElementById('dkPwWrap').hidden=false;
+      document.getElementById('dkState').innerHTML=
+        '<div class="note">That key is encrypted. Enter the passphrase to unlock it.</div>';
+      document.getElementById('dkPw').focus();
+    } else {
+      try{ loadKeyText(txt); }
+      catch(e){ document.getElementById('dkState').innerHTML=
+        '<div class="warn"><b>Could not read that file.</b> '+esc(e.message)+'</div>'; }
+    }
+  };
+  r.readAsText(f); this.value='';
+};
+document.getElementById('dkGo').onclick=function(){
+  var pw=document.getElementById('dkPw').value;
+  document.getElementById('dkState').innerHTML='<p class="mut">Unlocking…</p>';
+  decryptKeyFile(window._dkRaw,pw)
+    .then(function(csv){ loadKeyText(csv); document.getElementById('dkPwWrap').hidden=true; })
+    .catch(function(e){ document.getElementById('dkState').innerHTML=
+      '<div class="warn"><b>Could not unlock it.</b> '+esc(e.message)+'</div>'; });
+};
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&document.getElementById('decode').classList.contains('on')) closeDecode();
+});
+document.getElementById('printClose').onclick=closePrintView;
+document.getElementById('printNow').onclick=function(){window.print();};
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&document.getElementById('printView').classList.contains('on')) closePrintView();
+});
+document.getElementById('helpOpen').onclick=openHelp;
+document.getElementById('footST').onclick=function(e){
+  e.preventDefault(); openHelp();
+  setTimeout(function(){
+    var el=document.getElementById('hp-selftest');
+    if(el) document.getElementById('helpMain').scrollTop = el.offsetTop-12;
+    var b=document.getElementById('stRun'); if(b) b.focus();
+  },60);
+};
+document.getElementById('helpClose').onclick=closeHelp;
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape'&&document.getElementById('help').classList.contains('on')) closeHelp();
+});
+/* aria-modal="true" is a promise that focus stays inside the dialog. Keep it. */
+document.getElementById('help').addEventListener('keydown',function(e){
+  if(e.key!=='Tab')return;
+  var f=this.querySelectorAll('button,a[href],input,select,textarea');
+  if(!f.length)return;
+  var first=f[0], last=f[f.length-1];
+  if(e.shiftKey && document.activeElement===first){e.preventDefault();last.focus();}
+  else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first.focus();}
+});
+
+/* Registers the offline shell so the app installs and runs with no connection. The worker makes
+   no outbound request of its own — see sw.js. */
+if('serviceWorker' in navigator){
+  window.addEventListener('load',function(){
+    navigator.serviceWorker.register('sw.js').catch(function(){});
+  });
+}
+refresh();
+</script>
+</body>
+</html>

@@ -1,0 +1,33 @@
+{
+  "name": "XER Holdpoint",
+  "short_name": "Holdpoint",
+  "description": "Make a share-safe copy of a Primavera P6 XER before you send it. Names become codes; notebooks, user-defined fields, activity codes, expenses, contacts and usernames are removed. Logic, durations, dates, float and calendars stay exactly as they are. Nothing leaves your device.",
+  "id": "/HOLDPOINT/",
+  "start_url": "/HOLDPOINT/",
+  "scope": "/HOLDPOINT/",
+  "display": "standalone",
+  "display_override": ["window-controls-overlay", "standalone"],
+  "orientation": "any",
+  "background_color": "#eceae4",
+  "theme_color": "#16191d",
+  "lang": "en-GB",
+  "dir": "ltr",
+  "categories": ["business", "productivity", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "icons/icon_44x44.png",   "sizes": "44x44",   "type": "image/png" },
+    { "src": "icons/icon_48x48.png",   "sizes": "48x48",   "type": "image/png" },
+    { "src": "icons/icon_50x50.png",   "sizes": "50x50",   "type": "image/png" },
+    { "src": "icons/icon_71x71.png",   "sizes": "71x71",   "type": "image/png" },
+    { "src": "icons/icon_72x72.png",   "sizes": "72x72",   "type": "image/png" },
+    { "src": "icons/icon_96x96.png",   "sizes": "96x96",   "type": "image/png" },
+    { "src": "icons/icon_142x142.png", "sizes": "142x142", "type": "image/png" },
+    { "src": "icons/icon_150x150.png", "sizes": "150x150", "type": "image/png" },
+    { "src": "icons/icon_192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon_284x284.png", "sizes": "284x284", "type": "image/png" },
+    { "src": "icons/icon_300x300.png", "sizes": "300x300", "type": "image/png" },
+    { "src": "icons/icon_310x310.png", "sizes": "310x310", "type": "image/png" },
+    { "src": "icons/icon_512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon_620x620.png", "sizes": "620x620", "type": "image/png" }
+  ]
+}
